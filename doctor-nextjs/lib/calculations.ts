@@ -138,8 +138,8 @@ function calculateSimilarIndustryValue(
 
   // 類似業種の指標（医療・福祉業の例）
   const B = 0; // 配当（医療法人は配当なしのため0）
-  const C = 51; // 利益
-  const D = 395; // 純資産
+  const C: number = 51; // 利益
+  const D: number = 395; // 純資産
 
   // 評価会社の指標（50円換算）
   // 配当は医療法人では0
