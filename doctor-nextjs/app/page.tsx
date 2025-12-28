@@ -5,12 +5,19 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import { Investor } from '@/lib/types';
+import Step0BasicInfo from '@/components/valuation/Step0BasicInfo';
 import Step1CompanySize from '@/components/valuation/Step1CompanySize';
 import Step2FinancialData from '@/components/valuation/Step2FinancialData';
 import Step3Investors from '@/components/valuation/Step3Investors';
 
 export default function Home() {
   const router = useRouter();
+
+  // STEP0: 基本情報
+  const [id, setId] = useState('');
+  const [fiscalYear, setFiscalYear] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [personInCharge, setPersonInCharge] = useState('');
 
   // STEP1: 会社規模判定
   const [employees, setEmployees] = useState('');
@@ -38,6 +45,10 @@ export default function Home() {
     if (savedData) {
       try {
         const data = JSON.parse(savedData);
+        setId(data.id || '');
+        setFiscalYear(data.fiscalYear || '');
+        setCompanyName(data.companyName || '');
+        setPersonInCharge(data.personInCharge || '');
         setEmployees(data.employees || '');
         setTotalAssets(data.totalAssets || '');
         setSales(data.sales || '');
@@ -100,6 +111,10 @@ export default function Home() {
     }
 
     const formData = {
+      id,
+      fiscalYear,
+      companyName,
+      personInCharge,
       employees,
       totalAssets,
       sales,
@@ -144,6 +159,18 @@ export default function Home() {
           ※ 正確な評価額を算出するには、税理士等の専門家へご相談ください。
         </p>
       </div>
+
+      {/* STEP0 */}
+      <Step0BasicInfo
+        id={id}
+        setId={setId}
+        fiscalYear={fiscalYear}
+        setFiscalYear={setFiscalYear}
+        companyName={companyName}
+        setCompanyName={setCompanyName}
+        personInCharge={personInCharge}
+        setPersonInCharge={setPersonInCharge}
+      />
 
       {/* STEP1 */}
       <Step1CompanySize
