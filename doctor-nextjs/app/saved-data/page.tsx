@@ -34,8 +34,6 @@ export default function SavedDataPage() {
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('updated_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-
-  // 絞り込み用のstate
   const [filterYear, setFilterYear] = useState('');
   const [filterCompanyName, setFilterCompanyName] = useState('');
   const [filterPersonInCharge, setFilterPersonInCharge] = useState('');
@@ -112,19 +110,15 @@ export default function SavedDataPage() {
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      // 同じフィールドをクリックした場合は順序を反転
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
-      // 異なるフィールドをクリックした場合は昇順から開始
       setSortField(field);
       setSortOrder('asc');
     }
   };
 
-  // 年度の一覧を取得（重複なし、ソート済み）
   const availableYears = Array.from(new Set(data.map(record => record.fiscal_year))).sort((a, b) => b.localeCompare(a));
 
-  // 絞り込み処理
   const filteredData = data.filter((record) => {
     const yearMatch = !filterYear || record.fiscal_year === filterYear;
     const companyMatch = !filterCompanyName || record.company_name.toLowerCase().includes(filterCompanyName.toLowerCase());
@@ -133,7 +127,6 @@ export default function SavedDataPage() {
     return yearMatch && companyMatch && personMatch;
   });
 
-  // ソート処理
   const sortedData = [...filteredData].sort((a, b) => {
     let compareA: string | number = '';
     let compareB: string | number = '';
@@ -167,7 +160,7 @@ export default function SavedDataPage() {
     return (
       <div>
         <Header />
-        <h1 className="text-3xl font-bold mb-8">保存データ一覧</h1>
+        <h1>保存データ一覧</h1>
         <p>読み込み中...</p>
       </div>
     );
@@ -177,11 +170,13 @@ export default function SavedDataPage() {
     return (
       <div>
         <Header />
-        <h1 className="text-3xl font-bold mb-8">保存データ一覧</h1>
-        <p className="text-red-600">{error}</p>
-        <Button variant="primary" className="mt-4" onClick={() => router.push('/')}>
-          戻る
-        </Button>
+        <h1>保存データ一覧</h1>
+        <div className="card">
+          <p className="text-gray-600">{error}</p>
+          <Button className="mt-4" onClick={() => router.push('/')}>
+            戻る
+          </Button>
+        </div>
       </div>
     );
   }
@@ -189,29 +184,27 @@ export default function SavedDataPage() {
   return (
     <div>
       <Header />
-      <h1 className="text-3xl font-bold mb-8">保存データ一覧</h1>
+      <h1>保存データ一覧</h1>
 
       {data.length === 0 ? (
-        <div>
+        <div className="card">
           <p className="mb-4">保存されたデータはありません。</p>
-          <Button variant="primary" onClick={() => router.push('/')}>
+          <Button onClick={() => router.push('/')}>
             入力画面へ
           </Button>
         </div>
       ) : (
         <>
-          {/* 絞り込みフィルター */}
-          <div className="mb-6 p-4 bg-gray-50 rounded border border-gray-300">
-            <h2 className="text-lg font-bold mb-3">絞り込み</h2>
+          <div className="card">
+            <h2 className="mt-0">絞り込み</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">年度</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">年度</label>
                 <select
-                  className="w-full p-2 border border-gray-300 rounded"
                   value={filterYear}
                   onChange={(e) => setFilterYear(e.target.value)}
                 >
-                  <option value="">-- すべて --</option>
+                  <option value="">すべて</option>
                   {availableYears.map((year) => (
                     <option key={year} value={year}>
                       {year}年度
@@ -220,20 +213,18 @@ export default function SavedDataPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">会社名</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">会社名</label>
                 <input
                   type="text"
-                  className="w-full p-2 border border-gray-300 rounded"
                   placeholder="会社名で検索"
                   value={filterCompanyName}
                   onChange={(e) => setFilterCompanyName(e.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">担当者</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">担当者</label>
                 <input
                   type="text"
-                  className="w-full p-2 border border-gray-300 rounded"
                   placeholder="担当者名で検索"
                   value={filterPersonInCharge}
                   onChange={(e) => setFilterPersonInCharge(e.target.value)}
@@ -241,7 +232,7 @@ export default function SavedDataPage() {
               </div>
             </div>
             {(filterYear || filterCompanyName || filterPersonInCharge) && (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-4 flex items-center gap-3">
                 <span className="text-sm text-gray-600">
                   {filteredData.length}件 / {data.length}件中
                 </span>
@@ -251,75 +242,75 @@ export default function SavedDataPage() {
                     setFilterCompanyName('');
                     setFilterPersonInCharge('');
                   }}
-                  className="text-sm px-3 py-1"
+                  className="text-sm px-4 py-2"
                 >
-                  絞り込みをクリア
+                  クリア
                 </Button>
               </div>
             )}
           </div>
 
-          <table className="border-collapse w-full mt-3">
-            <thead>
-              <tr>
-                <th className="border border-gray-400 bg-gray-100 p-2 text-center">ID</th>
-                <th
-                  className="border border-gray-400 bg-gray-100 p-2 text-center cursor-pointer hover:bg-gray-200"
-                  onClick={() => handleSort('fiscal_year')}
-                >
-                  年度{getSortIndicator('fiscal_year')}
-                </th>
-                <th className="border border-gray-400 bg-gray-100 p-2 text-left">会社名</th>
-                <th
-                  className="border border-gray-400 bg-gray-100 p-2 text-left cursor-pointer hover:bg-gray-200"
-                  onClick={() => handleSort('person_in_charge')}
-                >
-                  担当者{getSortIndicator('person_in_charge')}
-                </th>
-                <th
-                  className="border border-gray-400 bg-gray-100 p-2 text-center cursor-pointer hover:bg-gray-200"
-                  onClick={() => handleSort('updated_at')}
-                >
-                  更新日時{getSortIndicator('updated_at')}
-                </th>
-                <th className="border border-gray-400 bg-gray-100 p-2 text-center">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedData.map((record) => (
-                <tr key={record.id}>
-                  <td className="border border-gray-400 p-2 text-center">{record.id}</td>
-                  <td className="border border-gray-400 p-2 text-center">{record.fiscal_year}年度</td>
-                  <td className="border border-gray-400 p-2 text-left">{record.company_name}</td>
-                  <td className="border border-gray-400 p-2 text-left">{record.person_in_charge}</td>
-                  <td className="border border-gray-400 p-2 text-center">
-                    {new Date(record.updated_at).toLocaleString('ja-JP')}
-                  </td>
-                  <td className="border border-gray-400 p-2 text-center">
-                    <div className="flex gap-2 justify-center">
-                      <Button
-                        variant="primary"
-                        className="text-sm px-4 py-1"
-                        onClick={() => loadRecord(record)}
-                      >
-                        読込
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        className="text-sm px-4 py-1"
-                        onClick={() => deleteRecord(record.id)}
-                      >
-                        削除
-                      </Button>
-                    </div>
-                  </td>
+          <div className="card">
+            <table>
+              <thead>
+                <tr>
+                  <th className="text-center">ID</th>
+                  <th
+                    className="text-center cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('fiscal_year')}
+                  >
+                    年度{getSortIndicator('fiscal_year')}
+                  </th>
+                  <th className="text-left">会社名</th>
+                  <th
+                    className="text-left cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('person_in_charge')}
+                  >
+                    担当者{getSortIndicator('person_in_charge')}
+                  </th>
+                  <th
+                    className="text-center cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('updated_at')}
+                  >
+                    更新日時{getSortIndicator('updated_at')}
+                  </th>
+                  <th className="text-center">操作</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sortedData.map((record) => (
+                  <tr key={record.id}>
+                    <td className="text-center">{record.id}</td>
+                    <td className="text-center">{record.fiscal_year}年度</td>
+                    <td className="text-left">{record.company_name}</td>
+                    <td className="text-left">{record.person_in_charge}</td>
+                    <td className="text-center">
+                      {new Date(record.updated_at).toLocaleString('ja-JP')}
+                    </td>
+                    <td className="text-center">
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          className="text-sm px-4 py-2"
+                          onClick={() => loadRecord(record)}
+                        >
+                          読込
+                        </Button>
+                        <Button
+                          className="text-sm px-4 py-2"
+                          onClick={() => deleteRecord(record.id)}
+                        >
+                          削除
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <div className="mt-6">
-            <Button variant="primary" onClick={() => router.push('/')}>
+            <Button onClick={() => router.push('/')}>
               入力画面へ戻る
             </Button>
           </div>

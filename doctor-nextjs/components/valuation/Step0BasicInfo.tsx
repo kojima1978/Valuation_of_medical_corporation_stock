@@ -21,35 +21,26 @@ export default function Step0BasicInfo({
     personInCharge,
     setPersonInCharge,
 }: Props) {
-    // 現在の年度を取得
     const currentYear = new Date().getFullYear();
-    // 前後5年の年度リストを生成
     const yearOptions = [];
     for (let i = currentYear + 5; i >= currentYear - 5; i--) {
         yearOptions.push(i);
     }
 
     return (
-        <div className="mt-10 mb-5">
-            <h2 className="text-2xl font-bold mt-8">
-                STEP０．基本情報を入力する
-            </h2>
-            <table className="border-collapse w-full mt-3">
+        <div className="card">
+            <h2 className="mt-0">STEP０．基本情報を入力する</h2>
+            <table>
                 <tbody>
                     <tr>
-                        <th className="border border-gray-400 bg-gray-100 p-2 text-left">
-                            項目
-                        </th>
-                        <th className="border border-gray-400 bg-gray-100 p-2 text-center">
-                            入力
-                        </th>
+                        <th className="text-left w-1/4">項目</th>
+                        <th className="text-left">入力</th>
                     </tr>
                     <tr>
-                        <td className="border border-gray-400 p-2 text-left">ID</td>
-                        <td className="border border-gray-400 p-2">
+                        <td>ID</td>
+                        <td>
                             <input
                                 type="text"
-                                className="w-full p-1 box-border border border-gray-300 rounded"
                                 value={id}
                                 onChange={(e) => {
                                     const value = e.target.value.replace(/\D/g, '');
@@ -63,14 +54,13 @@ export default function Step0BasicInfo({
                         </td>
                     </tr>
                     <tr>
-                        <td className="border border-gray-400 p-2 text-left">年度</td>
-                        <td className="border border-gray-400 p-2">
+                        <td>年度</td>
+                        <td>
                             <select
-                                className="w-full p-1 box-border"
                                 value={fiscalYear}
                                 onChange={(e) => setFiscalYear(e.target.value)}
                             >
-                                <option value="">-- 選択してください --</option>
+                                <option value="">選択してください</option>
                                 {yearOptions.map((year) => (
                                     <option key={year} value={year.toString()}>
                                         {year}年度
@@ -80,11 +70,10 @@ export default function Step0BasicInfo({
                         </td>
                     </tr>
                     <tr>
-                        <td className="border border-gray-400 p-2 text-left">会社名</td>
-                        <td className="border border-gray-400 p-2">
+                        <td>会社名</td>
+                        <td>
                             <input
                                 type="text"
-                                className="w-full p-1 box-border border border-gray-300 rounded"
                                 value={companyName}
                                 onChange={(e) => setCompanyName(e.target.value)}
                                 placeholder="会社名を入力してください"
@@ -92,11 +81,10 @@ export default function Step0BasicInfo({
                         </td>
                     </tr>
                     <tr>
-                        <td className="border border-gray-400 p-2 text-left">担当者</td>
-                        <td className="border border-gray-400 p-2">
+                        <td>担当者</td>
+                        <td>
                             <input
                                 type="text"
-                                className="w-full p-1 box-border border border-gray-300 rounded"
                                 value={personInCharge}
                                 onChange={(e) => setPersonInCharge(e.target.value)}
                                 placeholder="担当者名を入力してください"

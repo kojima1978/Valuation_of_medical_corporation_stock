@@ -1,15 +1,17 @@
 export default function Header() {
   return (
-    <div className="flex items-center gap-4 mb-8">
-      <img
-        src="/calculator.svg"
-        alt="計算機"
-        width="80"
-        height="80"
-      />
-      <h1 className="text-3xl font-bold">
-        簡単！！ 出資持分の評価額試算ツール
-      </h1>
-    </div>
+    <header className="bg-white shadow-sm rounded-lg p-6 mb-8">
+      <div className="flex items-center gap-4">
+        <img
+          src="/calculator.svg"
+          alt="計算機"
+          width="60"
+          height="60"
+        />
+        <h1 className="text-2xl font-bold m-0">
+          出資持分の評価額試算ツール
+        </h1>
+      </div>
+    </header>
   );
 }

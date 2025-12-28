@@ -4,7 +4,6 @@ import { getDatabase } from '@/lib/db';
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-
     const {
       id,
       fiscalYear,
@@ -22,7 +21,6 @@ export async function POST(request: NextRequest) {
       investors,
     } = data;
 
-    // バリデーション
     if (!id || !fiscalYear || !companyName || !personInCharge) {
       return NextResponse.json(
         { error: '必須項目が入力されていません' },
