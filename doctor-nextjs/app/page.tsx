@@ -89,6 +89,72 @@ export default function Home() {
     }
   };
 
+  // データベースに保存
+  const saveToDatabase = async () => {
+    // バリデーション: STEP0の必須項目チェック
+    if (!id || !fiscalYear || !companyName || !personInCharge) {
+      alert('STEP0の基本情報を入力してください。');
+      return;
+    }
+
+    // バリデーション: STEP1の必須項目チェック
+    if (!employees || !totalAssets || !sales) {
+      alert('STEP1の従業員数、総資産、売上高を選択してください。');
+      return;
+    }
+
+    // バリデーション: STEP2の必須項目チェック
+    if (!currentPeriodNetAsset || !netAssetTaxValue || !currentPeriodProfit) {
+      alert('STEP2の直前期の純資産、相続税評価額による純資産、直前期の利益を入力してください。');
+      return;
+    }
+
+    // バリデーション: STEP3の出資者情報チェック
+    const validInvestors = investors.filter((inv) => inv.name || inv.amount);
+    if (validInvestors.length === 0) {
+      alert('STEP3の出資者情報を入力してください。');
+      return;
+    }
+
+    const formData = {
+      id,
+      fiscalYear,
+      companyName,
+      personInCharge,
+      employees,
+      totalAssets,
+      sales,
+      currentPeriodNetAsset: parseFloat(currentPeriodNetAsset) || 0,
+      previousPeriodNetAsset: parseFloat(previousPeriodNetAsset) || 0,
+      netAssetTaxValue: parseFloat(netAssetTaxValue) || 0,
+      currentPeriodProfit: parseFloat(currentPeriodProfit) || 0,
+      previousPeriodProfit: parseFloat(previousPeriodProfit) || 0,
+      previousPreviousPeriodProfit: parseFloat(previousPreviousPeriodProfit) || 0,
+      investors: validInvestors,
+    };
+
+    // SQLiteに保存
+    try {
+      const response = await fetch('/api/valuations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'データの保存に失敗しました');
+      }
+
+      alert('データをデータベースに保存しました。');
+    } catch (error) {
+      console.error('保存エラー:', error);
+      alert('データの保存に失敗しました。再度お試しください。');
+    }
+  };
+
   // 計算結果ページへ遷移
   const goToResults = () => {
     // バリデーション: STEP1の必須項目チェック
@@ -139,6 +205,16 @@ export default function Home() {
       <Header />
 
       <p>医療法人の出資持分の評価額の概算を知りたい方向けのツールです。</p>
+
+      <div className="mt-6 mb-5">
+        <Button
+          variant="secondary"
+          className="text-base px-6 py-3"
+          onClick={() => router.push('/saved-data')}
+        >
+          保存データを読み込む
+        </Button>
+      </div>
 
       <div className="mt-10 mb-5">
         <h2 className="text-2xl font-bold mt-8">本ツールの目的</h2>
@@ -207,7 +283,14 @@ export default function Home() {
         totalInvestment={totalInvestment}
       />
 
-      <div className="mt-10 mb-5">
+      <div className="mt-10 mb-5 flex gap-4">
+        <Button
+          variant="secondary"
+          className="text-base px-6 py-3"
+          onClick={saveToDatabase}
+        >
+          データベースに保存
+        </Button>
         <Button
           variant="primary"
           className="text-base px-6 py-3"

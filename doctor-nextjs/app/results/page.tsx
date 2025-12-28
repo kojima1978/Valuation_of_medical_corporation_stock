@@ -28,6 +28,40 @@ export default function Results() {
     router.back();
   };
 
+  // データベースに保存
+  const saveToDatabase = async () => {
+    if (!formData) {
+      alert('保存するデータがありません。');
+      return;
+    }
+
+    // バリデーション: STEP0の必須項目チェック
+    if (!formData.id || !formData.fiscalYear || !formData.companyName || !formData.personInCharge) {
+      alert('STEP0の基本情報が不足しています。入力画面に戻って入力してください。');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/valuations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'データの保存に失敗しました');
+      }
+
+      alert('データをデータベースに保存しました。');
+    } catch (error) {
+      console.error('保存エラー:', error);
+      alert('データの保存に失敗しました。再度お試しください。');
+    }
+  };
+
   if (!result || !formData) {
     return (
       <div className="p-6">
@@ -297,6 +331,13 @@ export default function Results() {
           onClick={goBack}
         >
           ← 入力画面に戻る
+        </Button>
+        <Button
+          variant="secondary"
+          className="text-base px-6 py-3"
+          onClick={saveToDatabase}
+        >
+          データベースに保存
         </Button>
         <Button
           variant="primary"

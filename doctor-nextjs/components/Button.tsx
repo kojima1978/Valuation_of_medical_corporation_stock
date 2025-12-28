@@ -12,17 +12,11 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    'px-4 py-2 rounded border-none cursor-pointer font-normal transition-colors';
-
-  const variantClasses = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    secondary: 'bg-blue-500 text-white hover:bg-green-600 text-xs px-2 py-1',
-    success: 'bg-green-600 text-white hover:bg-green-700',
-  };
+    'px-4 py-2 rounded border-none cursor-pointer font-normal transition-colors bg-blue-600 text-white hover:bg-blue-700';
 
   return (
     <button
-      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      className={`${baseClasses} ${className}`}
       {...props}
     >
       {children}
