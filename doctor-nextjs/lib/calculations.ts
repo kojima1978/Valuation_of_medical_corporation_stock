@@ -133,13 +133,17 @@ function calculateSimilarIndustryValue(
   sizeMultiplier: number,
   totalShares: number
 ): { value: number; specialCompanyType: string } {
-  // 類似業種の株価（仮の値 - 実際は国税庁公表データを使用）
-  const A = 532; // 類似業種の令和6年平均株価
+  // 類似業種データを使用（登録されていない場合は0）
+  const similarData = formData.similarIndustryData || {
+    profit_per_share: 0,
+    net_asset_per_share: 0,
+    average_stock_price: 0,
+  };
 
-  // 類似業種の指標（医療・福祉業の例）
+  const A = similarData.average_stock_price; // 類似業種の平均株価
   const B = 0; // 配当（医療法人は配当なしのため0）
-  const C: number = 51; // 利益
-  const D: number = 395; // 純資産
+  const C: number = similarData.profit_per_share; // 類似業種の利益
+  const D: number = similarData.net_asset_per_share; // 類似業種の純資産
 
   // 評価会社の指標（50円換算）
   // 配当は医療法人では0
@@ -188,10 +192,19 @@ function calculateSimilarIndustryValue(
   const netAssetPerShare2 = totalShares > 0 ? netAsset2 / totalShares : 0;
   const d2 = Math.floor(netAssetPerShare2);
 
+  // デバッグ用ログ
+  console.log('比準要素判定:', {
+    currentPeriodProfit: formData.currentPeriodProfit,
+    currentPeriodNetAsset: formData.currentPeriodNetAsset,
+    c1, d1, c2, d2,
+    totalShares
+  });
+
   // 比準要素数0の会社判定
   if (c1 === 0 && d1 === 0) {
     // 比準要素数0の会社は類似業種比準価額を使用できない
     // 純資産価額方式のみとなるため、類似業種比準価額は0を返す
+    console.warn('比準要素数0の会社と判定されました');
     return { value: 0, specialCompanyType: '比準0（比準要素数0の会社）' };
   }
 
@@ -305,12 +318,12 @@ export function calculateEvaluation(formData: FormData): CalculationResult {
 
   // 出資金額総額を計算
   const totalInvestment = formData.investors.reduce(
-    (sum, investor) => sum + investor.amount,
+    (sum, investor) => sum + (investor.amount || 0),
     0
   );
 
   // 総出資口数を計算（1口50円と仮定）
-  const totalShares = totalInvestment / 50;
+  const totalShares = totalInvestment > 0 ? totalInvestment / 50 : 0;
 
   // 類似業種比準価額（50円あたり）
   const similarIndustryResult = calculateSimilarIndustryValue(
@@ -373,12 +386,13 @@ export function calculateEvaluation(formData: FormData): CalculationResult {
 
   // 各出資者の評価額と贈与税を計算
   const investorResults = formData.investors.map((investor) => {
-    const shares = investor.amount / 50;
+    const amount = investor.amount || 0;
+    const shares = amount / 50;
     const evaluationValue = Math.round((shares * perShareValue) / 1000);
     const giftTax = calculateGiftTax(evaluationValue);
     return {
-      name: investor.name,
-      amount: investor.amount,
+      name: investor.name || '',
+      amount: amount,
       evaluationValue,
       giftTax,
     };

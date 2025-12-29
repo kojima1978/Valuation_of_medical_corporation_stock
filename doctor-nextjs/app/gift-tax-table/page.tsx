@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import Button from '@/components/Button';
 
 export default function GiftTaxTable() {
@@ -248,11 +249,11 @@ export default function GiftTaxTable() {
       {/* 戻るボタン */}
       <div className="text-center mt-8">
         <Button
-          variant="primary"
-          className="text-base px-6 py-3"
+          className="text-base px-6 py-3 flex items-center gap-2"
           onClick={goBack}
         >
-          ← 計算結果に戻る
+          <ArrowLeft size={20} />
+          計算結果に戻る
         </Button>
       </div>
     </div>

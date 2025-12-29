@@ -1,21 +1,40 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+/**
+ * データベースのタイムスタンプをローカル時刻に変更するマイグレーションスクリプト
+ *
+ * 実行方法:
+ * 1. 開発サーバーを停止
+ * 2. node migrate-timestamps.js
+ * 3. 開発サーバーを再起動
+ */
 
-const dbPath = path.join(process.cwd(), 'data', 'doctor.db');
-let db: Database.Database | null = null;
+const Database = require('better-sqlite3');
+const path = require('path');
 
-export function getDatabase() {
-  if (!db) {
-    db = new Database(dbPath);
-    initializeDatabase(db);
-  }
-  return db;
-}
+const dbPath = path.join(__dirname, 'data', 'doctor.db');
+const db = new Database(dbPath);
 
-function initializeDatabase(database: Database.Database) {
-  database.exec(`
+console.log('データベースマイグレーション開始...');
+
+try {
+  // トランザクション開始
+  db.exec('BEGIN TRANSACTION');
+
+  // 既存のテーブルを削除
+  console.log('既存のテーブルを削除中...');
+  db.exec(`
+    DROP TABLE IF EXISTS investors;
+    DROP TABLE IF EXISTS financial_data;
+    DROP TABLE IF EXISTS valuations;
+    DROP TABLE IF EXISTS users;
+    DROP TABLE IF EXISTS companies;
+    DROP TABLE IF EXISTS similar_industry_data;
+  `);
+
+  // 新しいスキーマでテーブルを作成
+  console.log('新しいスキーマでテーブルを作成中...');
+  db.exec(`
     -- 会社マスタテーブル
-    CREATE TABLE IF NOT EXISTS companies (
+    CREATE TABLE companies (
       id TEXT PRIMARY KEY,
       company_name TEXT NOT NULL UNIQUE,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
@@ -23,7 +42,7 @@ function initializeDatabase(database: Database.Database) {
     );
 
     -- 担当者マスタテーブル
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
@@ -31,7 +50,7 @@ function initializeDatabase(database: Database.Database) {
     );
 
     -- 評価レコードテーブル
-    CREATE TABLE IF NOT EXISTS valuations (
+    CREATE TABLE valuations (
       id TEXT PRIMARY KEY,
       company_id TEXT NOT NULL,
       user_id TEXT NOT NULL,
@@ -43,7 +62,7 @@ function initializeDatabase(database: Database.Database) {
     );
 
     -- 財務データテーブル
-    CREATE TABLE IF NOT EXISTS financial_data (
+    CREATE TABLE financial_data (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       valuation_id TEXT NOT NULL,
       employees TEXT,
@@ -61,7 +80,7 @@ function initializeDatabase(database: Database.Database) {
     );
 
     -- 投資家テーブル
-    CREATE TABLE IF NOT EXISTS investors (
+    CREATE TABLE investors (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       valuation_id TEXT NOT NULL,
       investor_name TEXT NOT NULL,
@@ -73,7 +92,7 @@ function initializeDatabase(database: Database.Database) {
     );
 
     -- 類似業種データマスタテーブル
-    CREATE TABLE IF NOT EXISTS similar_industry_data (
+    CREATE TABLE similar_industry_data (
       id TEXT PRIMARY KEY,
       fiscal_year TEXT NOT NULL UNIQUE,
       profit_per_share REAL NOT NULL DEFAULT 51,
@@ -84,28 +103,32 @@ function initializeDatabase(database: Database.Database) {
     );
 
     -- インデックス作成
-    CREATE INDEX IF NOT EXISTS idx_valuations_company_id ON valuations(company_id);
-    CREATE INDEX IF NOT EXISTS idx_valuations_user_id ON valuations(user_id);
-    CREATE INDEX IF NOT EXISTS idx_financial_data_valuation_id ON financial_data(valuation_id);
-    CREATE INDEX IF NOT EXISTS idx_investors_valuation_id ON investors(valuation_id);
-    CREATE INDEX IF NOT EXISTS idx_similar_industry_fiscal_year ON similar_industry_data(fiscal_year);
+    CREATE INDEX idx_valuations_company_id ON valuations(company_id);
+    CREATE INDEX idx_valuations_user_id ON valuations(user_id);
+    CREATE INDEX idx_financial_data_valuation_id ON financial_data(valuation_id);
+    CREATE INDEX idx_investors_valuation_id ON investors(valuation_id);
+    CREATE INDEX idx_similar_industry_fiscal_year ON similar_industry_data(fiscal_year);
   `);
 
   // デフォルトの類似業種データを挿入（令和6年度 = 2024年度）
+  console.log('デフォルトデータを挿入中...');
   const defaultYear = '2024';
-  const existingDefault = database.prepare('SELECT id FROM similar_industry_data WHERE fiscal_year = ?').get(defaultYear);
-  if (!existingDefault) {
-    const id = `sim_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    database.prepare(`
-      INSERT INTO similar_industry_data (id, fiscal_year, profit_per_share, net_asset_per_share, average_stock_price)
-      VALUES (?, ?, 51, 395, 532)
-    `).run(id, defaultYear);
-  }
-}
+  const id = `sim_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  db.prepare(`
+    INSERT INTO similar_industry_data (id, fiscal_year, profit_per_share, net_asset_per_share, average_stock_price)
+    VALUES (?, ?, 51, 395, 532)
+  `).run(id, defaultYear);
 
-export function closeDatabase() {
-  if (db) {
-    db.close();
-    db = null;
-  }
+  // トランザクションコミット
+  db.exec('COMMIT');
+
+  console.log('✓ マイグレーション完了！');
+  console.log('注意: 既存のデータはすべて削除されました。');
+
+} catch (error) {
+  db.exec('ROLLBACK');
+  console.error('✗ マイグレーション失敗:', error);
+  process.exit(1);
+} finally {
+  db.close();
 }

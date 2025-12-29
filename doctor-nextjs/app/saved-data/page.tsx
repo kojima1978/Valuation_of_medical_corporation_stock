@@ -2,23 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Upload, Trash2, X, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
+import { toWareki } from '@/lib/date-utils';
 
 type SavedValuation = {
   id: string;
-  fiscal_year: string;
-  company_name: string;
-  person_in_charge: string;
+  fiscalYear: string;
+  companyName: string;
+  personInCharge: string;
   employees: string;
-  total_assets: string;
+  totalAssets: string;
   sales: string;
-  current_period_net_asset: number;
-  previous_period_net_asset: number;
-  net_asset_tax_value: number;
-  current_period_profit: number;
-  previous_period_profit: number;
-  previous_previous_period_profit: number;
+  currentPeriodNetAsset: number;
+  previousPeriodNetAsset: number;
+  netAssetTaxValue: number;
+  currentPeriodProfit: number;
+  previousPeriodProfit: number;
+  previousPreviousPeriodProfit: number;
   investors: any; // Already parsed by API
   created_at: string;
   updated_at: string;
@@ -64,18 +66,18 @@ export default function SavedDataPage() {
   const loadRecord = (record: SavedValuation) => {
     const formData = {
       id: record.id,
-      fiscalYear: record.fiscal_year,
-      companyName: record.company_name,
-      personInCharge: record.person_in_charge,
+      fiscalYear: record.fiscalYear,
+      companyName: record.companyName,
+      personInCharge: record.personInCharge,
       employees: record.employees,
-      totalAssets: record.total_assets,
+      totalAssets: record.totalAssets,
       sales: record.sales,
-      currentPeriodNetAsset: record.current_period_net_asset,
-      previousPeriodNetAsset: record.previous_period_net_asset,
-      netAssetTaxValue: record.net_asset_tax_value,
-      currentPeriodProfit: record.current_period_profit,
-      previousPeriodProfit: record.previous_period_profit,
-      previousPreviousPeriodProfit: record.previous_previous_period_profit,
+      currentPeriodNetAsset: record.currentPeriodNetAsset,
+      previousPeriodNetAsset: record.previousPeriodNetAsset,
+      netAssetTaxValue: record.netAssetTaxValue,
+      currentPeriodProfit: record.currentPeriodProfit,
+      previousPeriodProfit: record.previousPeriodProfit,
+      previousPreviousPeriodProfit: record.previousPreviousPeriodProfit,
       investors: typeof record.investors === 'string' ? JSON.parse(record.investors) : record.investors,
     };
 
@@ -117,12 +119,12 @@ export default function SavedDataPage() {
     }
   };
 
-  const availableYears = Array.from(new Set(data.map(record => record.fiscal_year))).sort((a, b) => b.localeCompare(a));
+  const availableYears = Array.from(new Set(data.map(record => record.fiscalYear).filter(year => year && year.trim()))).sort((a, b) => b.localeCompare(a));
 
   const filteredData = data.filter((record) => {
-    const yearMatch = !filterYear || record.fiscal_year === filterYear;
-    const companyMatch = !filterCompanyName || record.company_name.toLowerCase().includes(filterCompanyName.toLowerCase());
-    const personMatch = !filterPersonInCharge || record.person_in_charge.toLowerCase().includes(filterPersonInCharge.toLowerCase());
+    const yearMatch = !filterYear || record.fiscalYear === filterYear;
+    const companyMatch = !filterCompanyName || record.companyName.toLowerCase().includes(filterCompanyName.toLowerCase());
+    const personMatch = !filterPersonInCharge || record.personInCharge.toLowerCase().includes(filterPersonInCharge.toLowerCase());
 
     return yearMatch && companyMatch && personMatch;
   });
@@ -132,11 +134,11 @@ export default function SavedDataPage() {
     let compareB: string | number = '';
 
     if (sortField === 'fiscal_year') {
-      compareA = a.fiscal_year;
-      compareB = b.fiscal_year;
+      compareA = a.fiscalYear;
+      compareB = b.fiscalYear;
     } else if (sortField === 'person_in_charge') {
-      compareA = a.person_in_charge;
-      compareB = b.person_in_charge;
+      compareA = a.personInCharge;
+      compareB = b.personInCharge;
     } else if (sortField === 'updated_at') {
       compareA = new Date(a.updated_at).getTime();
       compareB = new Date(b.updated_at).getTime();
@@ -207,7 +209,7 @@ export default function SavedDataPage() {
                   <option value="">すべて</option>
                   {availableYears.map((year) => (
                     <option key={year} value={year}>
-                      {year}年度
+                      {toWareki(year)}年度
                     </option>
                   ))}
                 </select>
@@ -242,8 +244,9 @@ export default function SavedDataPage() {
                     setFilterCompanyName('');
                     setFilterPersonInCharge('');
                   }}
-                  className="text-sm px-4 py-2"
+                  className="text-sm px-4 py-2 flex items-center gap-1"
                 >
+                  <X size={16} />
                   クリア
                 </Button>
               </div>
@@ -254,14 +257,13 @@ export default function SavedDataPage() {
             <table>
               <thead>
                 <tr>
-                  <th className="text-center">ID</th>
+                  <th className="text-left">会社名</th>
                   <th
                     className="text-center cursor-pointer hover:bg-gray-200"
                     onClick={() => handleSort('fiscal_year')}
                   >
                     年度{getSortIndicator('fiscal_year')}
                   </th>
-                  <th className="text-left">会社名</th>
                   <th
                     className="text-left cursor-pointer hover:bg-gray-200"
                     onClick={() => handleSort('person_in_charge')}
@@ -280,25 +282,26 @@ export default function SavedDataPage() {
               <tbody>
                 {sortedData.map((record) => (
                   <tr key={record.id}>
-                    <td className="text-center">{record.id}</td>
-                    <td className="text-center">{record.fiscal_year}年度</td>
-                    <td className="text-left">{record.company_name}</td>
-                    <td className="text-left">{record.person_in_charge}</td>
+                    <td className="text-left">{record.companyName}</td>
+                    <td className="text-center">{toWareki(record.fiscalYear)}年度</td>
+                    <td className="text-left">{record.personInCharge}</td>
                     <td className="text-center">
                       {new Date(record.updated_at).toLocaleString('ja-JP')}
                     </td>
                     <td className="text-center">
                       <div className="flex gap-2 justify-center">
                         <Button
-                          className="text-sm px-4 py-2"
+                          className="text-sm px-4 py-2 flex items-center gap-1"
                           onClick={() => loadRecord(record)}
                         >
+                          <Upload size={16} />
                           読込
                         </Button>
                         <Button
-                          className="text-sm px-4 py-2"
+                          className="text-sm px-4 py-2 flex items-center gap-1"
                           onClick={() => deleteRecord(record.id)}
                         >
+                          <Trash2 size={16} />
                           削除
                         </Button>
                       </div>
@@ -310,7 +313,8 @@ export default function SavedDataPage() {
           </div>
 
           <div className="mt-6">
-            <Button onClick={() => router.push('/')}>
+            <Button onClick={() => router.push('/')} className="flex items-center gap-2">
+              <ArrowLeft size={20} />
               入力画面へ戻る
             </Button>
           </div>

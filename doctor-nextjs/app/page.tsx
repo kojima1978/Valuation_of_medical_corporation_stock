@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Save, Calculator } from 'lucide-react';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import { Investor } from '@/lib/types';
@@ -9,11 +10,13 @@ import Step0BasicInfo from '@/components/valuation/Step0BasicInfo';
 import Step1CompanySize from '@/components/valuation/Step1CompanySize';
 import Step2FinancialData from '@/components/valuation/Step2FinancialData';
 import Step3Investors from '@/components/valuation/Step3Investors';
+import { useSaveValuation } from '@/hooks/useSaveValuation';
+import { validateBasicInfo } from '@/lib/utils';
 
 export default function Home() {
   const router = useRouter();
+  const { saveValuation, isSaving } = useSaveValuation();
 
-  const [id, setId] = useState('');
   const [fiscalYear, setFiscalYear] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [personInCharge, setPersonInCharge] = useState('');
@@ -37,7 +40,6 @@ export default function Home() {
     if (savedData) {
       try {
         const data = JSON.parse(savedData);
-        setId(data.id || '');
         setFiscalYear(data.fiscalYear || '');
         setCompanyName(data.companyName || '');
         setPersonInCharge(data.personInCharge || '');
@@ -78,8 +80,9 @@ export default function Home() {
   };
 
   const saveToDatabase = async () => {
-    if (!id || !fiscalYear || !companyName || !personInCharge) {
-      alert('STEP0の基本情報を入力してください。');
+    const validation = validateBasicInfo({ fiscalYear, companyName, personInCharge });
+    if (!validation.isValid) {
+      alert(validation.message);
       return;
     }
 
@@ -100,7 +103,6 @@ export default function Home() {
     }
 
     const formData = {
-      id,
       fiscalYear,
       companyName,
       personInCharge,
@@ -116,23 +118,10 @@ export default function Home() {
       investors: validInvestors,
     };
 
-    try {
-      const response = await fetch('/api/valuations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'データの保存に失敗しました');
-      }
-
+    const success = await saveValuation(formData);
+    if (success) {
       alert('データをデータベースに保存しました。');
-    } catch (error) {
-      console.error('保存エラー:', error);
+    } else {
       alert('データの保存に失敗しました。再度お試しください。');
     }
   };
@@ -155,7 +144,6 @@ export default function Home() {
     }
 
     const formData = {
-      id,
       fiscalYear,
       companyName,
       personInCharge,
@@ -207,8 +195,6 @@ export default function Home() {
       </div>
 
       <Step0BasicInfo
-        id={id}
-        setId={setId}
         fiscalYear={fiscalYear}
         setFiscalYear={setFiscalYear}
         companyName={companyName}
@@ -250,10 +236,12 @@ export default function Home() {
       />
 
       <div className="flex gap-4 mt-8">
-        <Button onClick={saveToDatabase}>
-          データベースに保存
+        <Button onClick={saveToDatabase} className="flex items-center gap-2">
+          <Save size={20} />
+          保存
         </Button>
-        <Button onClick={goToResults}>
+        <Button onClick={goToResults} className="flex items-center gap-2">
+          <Calculator size={20} />
           計算結果を確認する
         </Button>
       </div>

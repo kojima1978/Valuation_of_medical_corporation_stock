@@ -2,26 +2,58 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { FormData, CalculationResult } from '@/lib/types';
 import { calculateEvaluation } from '@/lib/calculations';
 import Button from '@/components/Button';
+import { useSaveValuation } from '@/hooks/useSaveValuation';
+import { validateBasicInfo } from '@/lib/utils';
+import { toWareki } from '@/lib/date-utils';
 
 export default function Results() {
   const router = useRouter();
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
+  const { saveValuation, isSaving } = useSaveValuation();
 
   useEffect(() => {
-    // localStorageからデータを取得
-    const savedData = localStorage.getItem('formData');
-    if (savedData) {
-      const data: FormData = JSON.parse(savedData);
-      setFormData(data);
+    const loadDataAndCalculate = async () => {
+      // localStorageからデータを取得
+      const savedData = localStorage.getItem('formData');
+      if (savedData) {
+        const data: FormData = JSON.parse(savedData);
+        console.log('FormData loaded:', data);
 
-      // 評価額を計算
-      const calculatedResult = calculateEvaluation(data);
-      setResult(calculatedResult);
-    }
+        // 年度から類似業種データを取得
+        if (data.fiscalYear) {
+          try {
+            const response = await fetch(`/api/similar-industry?fiscalYear=${data.fiscalYear}`);
+            if (response.ok) {
+              const similarData = await response.json();
+              data.similarIndustryData = similarData;
+              console.log('Similar industry data loaded:', similarData);
+            }
+          } catch (error) {
+            console.error('類似業種データの取得に失敗:', error);
+            // エラーの場合はデフォルト値を使用
+          }
+        }
+
+        setFormData(data);
+
+        // 評価額を計算
+        try {
+          const calculatedResult = calculateEvaluation(data);
+          console.log('Calculation result:', calculatedResult);
+          setResult(calculatedResult);
+        } catch (error) {
+          console.error('Calculation error:', error);
+          alert('計算エラーが発生しました: ' + (error instanceof Error ? error.message : ''));
+        }
+      }
+    };
+
+    loadDataAndCalculate();
   }, []);
 
   const goBack = () => {
@@ -34,28 +66,26 @@ export default function Results() {
       return;
     }
 
-    if (!formData.id || !formData.fiscalYear || !formData.companyName || !formData.personInCharge) {
+    const validation = validateBasicInfo({
+      fiscalYear: formData.fiscalYear,
+      companyName: formData.companyName,
+      personInCharge: formData.personInCharge
+    });
+
+    if (!validation.isValid) {
       alert('STEP0の基本情報が不足しています。入力画面に戻って入力してください。');
       return;
     }
 
-    try {
-      const response = await fetch('/api/valuations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'データの保存に失敗しました');
-      }
-
+    const success = await saveValuation(formData);
+    if (success) {
       alert('データをデータベースに保存しました。');
-    } catch (error) {
-      console.error('保存エラー:', error);
+      // Reload formData from localStorage (it will have the updated ID)
+      const savedData = localStorage.getItem('formData');
+      if (savedData) {
+        setFormData(JSON.parse(savedData));
+      }
+    } else {
       alert('データの保存に失敗しました。再度お試しください。');
     }
   };
@@ -136,9 +166,9 @@ export default function Results() {
               <tr key={index}>
                 <td className="text-center">{index + 1}</td>
                 <td className="text-left">{investor.name || ''}</td>
-                <td className="text-right">{investor.amount.toLocaleString('ja-JP')}円</td>
-                <td className="text-right">{investor.evaluationValue.toLocaleString('ja-JP')}千円</td>
-                <td className="text-right">{investor.giftTax.toLocaleString('ja-JP')}千円</td>
+                <td className="text-right">{(investor.amount || 0).toLocaleString('ja-JP')}円</td>
+                <td className="text-right">{(investor.evaluationValue || 0).toLocaleString('ja-JP')}千円</td>
+                <td className="text-right">{(investor.giftTax || 0).toLocaleString('ja-JP')}千円</td>
               </tr>
             ))}
           </tbody>
@@ -147,13 +177,13 @@ export default function Results() {
               <td className="text-center">合計</td>
               <td></td>
               <td className="text-right">
-                {formData.investors.reduce((sum, inv) => sum + inv.amount, 0).toLocaleString('ja-JP')}円
+                {formData.investors.reduce((sum, inv) => sum + (inv.amount || 0), 0).toLocaleString('ja-JP')}円
               </td>
               <td className="text-right">
-                {result.investorResults.reduce((sum, inv) => sum + inv.evaluationValue, 0).toLocaleString('ja-JP')}千円
+                {result.investorResults.reduce((sum, inv) => sum + (inv.evaluationValue || 0), 0).toLocaleString('ja-JP')}千円
               </td>
               <td className="text-right">
-                {result.investorResults.reduce((sum, inv) => sum + inv.giftTax, 0).toLocaleString('ja-JP')}千円
+                {result.investorResults.reduce((sum, inv) => sum + (inv.giftTax || 0), 0).toLocaleString('ja-JP')}千円
               </td>
             </tr>
           </tfoot>
@@ -200,15 +230,21 @@ export default function Results() {
             </tr>
             <tr>
               <td className="pl-6">類似業種の利益</td>
-              <td className="text-right">51円</td>
+              <td className="text-right">
+                {formData?.similarIndustryData?.profit_per_share ?? 51}円
+              </td>
             </tr>
             <tr>
               <td className="pl-6">類似業種の純資産</td>
-              <td className="text-right">395円</td>
+              <td className="text-right">
+                {formData?.similarIndustryData?.net_asset_per_share ?? 395}円
+              </td>
             </tr>
             <tr>
-              <td className="pl-6">類似業種の令和6年平均株価</td>
-              <td className="text-right">532円</td>
+              <td className="pl-6">類似業種の{formData?.fiscalYear ? `${toWareki(formData.fiscalYear)}年度` : '令和6年度'}平均株価</td>
+              <td className="text-right">
+                {formData?.similarIndustryData?.average_stock_price ?? 532}円
+              </td>
             </tr>
             <tr>
               <td>1口あたりの純資産価額方式による評価額</td>
@@ -230,18 +266,21 @@ export default function Results() {
         </table>
 
         <p className="text-sm text-gray-600 mt-4">
-          ※ 類似業種の株価等は、令和7年12月時点の公表データを採用しています。
+          ※ 類似業種の株価等は、選択した年度に対応するデータを使用しています。データがない場合はデフォルト値（令和6年度）を使用します。
         </p>
       </div>
 
       <div className="flex justify-center gap-4">
-        <Button onClick={goBack}>
+        <Button onClick={goBack} className="flex items-center gap-2">
+          <ArrowLeft size={20} />
           入力画面に戻る
         </Button>
-        <Button onClick={saveToDatabase}>
-          データベースに保存
+        <Button onClick={saveToDatabase} className="flex items-center gap-2">
+          <Save size={20} />
+          保存
         </Button>
-        <Button onClick={() => router.push('/gift-tax-table')}>
+        <Button onClick={() => router.push('/gift-tax-table')} className="flex items-center gap-2">
+          <FileText size={20} />
           相続税額早見表を見る
         </Button>
       </div>

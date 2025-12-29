@@ -4,6 +4,12 @@ export interface Investor {
 }
 
 export interface FormData {
+  // STEP0: 基本情報
+  id?: string;
+  fiscalYear?: string;
+  companyName?: string;
+  personInCharge?: string;
+
   // STEP1: 会社規模判定
   employees: string;
   totalAssets: string;
@@ -19,6 +25,16 @@ export interface FormData {
 
   // STEP3: 出資者情報
   investors: Investor[];
+
+  // 類似業種データ（計算時に動的に取得）
+  similarIndustryData?: SimilarIndustryData;
+}
+
+export interface SimilarIndustryData {
+  fiscal_year: string;
+  profit_per_share: number;
+  net_asset_per_share: number;
+  average_stock_price: number;
 }
 
 export interface CalculationResult {
