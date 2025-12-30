@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, Trash2, X, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
-import Button from '@/components/Button';
 import { toWareki } from '@/lib/date-utils';
 
 type SavedValuation = {
@@ -39,6 +38,26 @@ export default function SavedDataPage() {
   const [filterYear, setFilterYear] = useState('');
   const [filterCompanyName, setFilterCompanyName] = useState('');
   const [filterPersonInCharge, setFilterPersonInCharge] = useState('');
+
+  // 共通ボタンスタイル
+  const buttonStyle = {
+    whiteSpace: 'nowrap' as const,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: 'white',
+    color: 'black',
+    border: '1px solid #d1d5db',
+    transition: 'all 0.2s ease'
+  };
+
+  const smallButtonStyle = {
+    ...buttonStyle,
+    fontSize: '0.875rem',
+    padding: '0.5rem 1rem'
+  };
+
+  const buttonHoverClass = 'btn hover:bg-gray-200 hover:border-gray-400';
 
   useEffect(() => {
     loadData();
@@ -175,9 +194,13 @@ export default function SavedDataPage() {
         <h1>保存データ一覧</h1>
         <div className="card">
           <p className="text-gray-600">{error}</p>
-          <Button className="mt-4" onClick={() => router.push('/')}>
+          <button
+            className={`${buttonHoverClass} mt-4`}
+            style={buttonStyle}
+            onClick={() => router.push('/')}
+          >
             戻る
-          </Button>
+          </button>
         </div>
       </div>
     );
@@ -191,9 +214,13 @@ export default function SavedDataPage() {
       {data.length === 0 ? (
         <div className="card">
           <p className="mb-4">保存されたデータはありません。</p>
-          <Button onClick={() => router.push('/')}>
+          <button
+            className={buttonHoverClass}
+            style={buttonStyle}
+            onClick={() => router.push('/')}
+          >
             入力画面へ
-          </Button>
+          </button>
         </div>
       ) : (
         <>
@@ -238,17 +265,18 @@ export default function SavedDataPage() {
                 <span className="text-sm text-gray-600">
                   {filteredData.length}件 / {data.length}件中
                 </span>
-                <Button
+                <button
                   onClick={() => {
                     setFilterYear('');
                     setFilterCompanyName('');
                     setFilterPersonInCharge('');
                   }}
-                  className="text-sm px-4 py-2 flex items-center gap-1"
+                  className={buttonHoverClass}
+                  style={smallButtonStyle}
                 >
                   <X size={16} />
                   クリア
-                </Button>
+                </button>
               </div>
             )}
           </div>
@@ -290,20 +318,22 @@ export default function SavedDataPage() {
                     </td>
                     <td className="text-center">
                       <div className="flex gap-2 justify-center">
-                        <Button
-                          className="text-sm px-4 py-2 flex items-center gap-1"
+                        <button
                           onClick={() => loadRecord(record)}
+                          className={buttonHoverClass}
+                          style={smallButtonStyle}
                         >
                           <Upload size={16} />
                           読込
-                        </Button>
-                        <Button
-                          className="text-sm px-4 py-2 flex items-center gap-1"
+                        </button>
+                        <button
                           onClick={() => deleteRecord(record.id)}
+                          className={buttonHoverClass}
+                          style={smallButtonStyle}
                         >
                           <Trash2 size={16} />
                           削除
-                        </Button>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -313,10 +343,14 @@ export default function SavedDataPage() {
           </div>
 
           <div className="mt-6">
-            <Button onClick={() => router.push('/')} className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/')}
+              className={buttonHoverClass}
+              style={buttonStyle}
+            >
               <ArrowLeft size={20} />
               入力画面へ戻る
-            </Button>
+            </button>
           </div>
         </>
       )}

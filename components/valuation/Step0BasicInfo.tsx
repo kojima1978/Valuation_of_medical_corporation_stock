@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { File, Building2, CalendarDays, UserPen } from 'lucide-react';
 import Modal from '@/components/Modal';
 import { toWareki } from '@/lib/date-utils';
 
@@ -29,6 +31,7 @@ export default function Step0BasicInfo({
     personInCharge,
     setPersonInCharge,
 }: Props) {
+    const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isUserSelectModalOpen, setIsUserSelectModalOpen] = useState(false);
@@ -41,6 +44,20 @@ export default function Step0BasicInfo({
     const [selectedUserId, setSelectedUserId] = useState('');
     const [companyNameInput, setCompanyNameInput] = useState('');
     const [selectedCompanyId, setSelectedCompanyId] = useState('');
+
+    // 共通ボタンスタイル
+    const buttonStyle = {
+        whiteSpace: 'nowrap' as const,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        backgroundColor: 'white',
+        color: 'black',
+        border: '1px solid #d1d5db',
+        transition: 'all 0.2s ease'
+    };
+
+    const buttonHoverClass = 'btn hover:bg-gray-200 hover:border-gray-400';
 
     const currentYear = new Date().getFullYear();
     const yearOptions = [];
@@ -257,7 +274,17 @@ export default function Step0BasicInfo({
 
     return (
         <div className="card">
-            <h2 className="mt-0">STEP０．基本情報を入力する</h2>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="mt-0 mb-0">STEP０．基本情報を入力する</h2>
+                <button
+                    onClick={() => router.push('/saved-data')}
+                    className={buttonHoverClass}
+                    style={buttonStyle}
+                >
+                    <File size={20} />
+                    読み込み
+                </button>
+            </div>
             <table>
                 <tbody>
                     <tr>
@@ -274,9 +301,10 @@ export default function Step0BasicInfo({
                                 <button
                                     type="button"
                                     onClick={handleOpenCompanySelectModal}
-                                    className="btn btn-primary"
-                                    style={{ whiteSpace: 'nowrap' }}
+                                    className={buttonHoverClass}
+                                    style={buttonStyle}
                                 >
+                                    <Building2 size={20} />
                                     会社を選択
                                 </button>
                             </div>
@@ -285,11 +313,11 @@ export default function Step0BasicInfo({
                     <tr>
                         <td>年度</td>
                         <td>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <select
                                     value={fiscalYear}
                                     onChange={(e) => setFiscalYear(e.target.value)}
-                                    style={{ flex: 1 }}
+                                    style={{ width: '200px' }}
                                 >
                                     <option value="">選択してください</option>
                                     {yearOptions.map((year) => (
@@ -300,9 +328,10 @@ export default function Step0BasicInfo({
                                 </select>
                                 <a
                                     href="/similar-industry-settings"
-                                    className="btn btn-primary"
-                                    style={{ whiteSpace: 'nowrap', textDecoration: 'none' }}
+                                    className={buttonHoverClass}
+                                    style={{ ...buttonStyle, textDecoration: 'none' }}
                                 >
+                                    <CalendarDays size={20} />
                                     類似業種データ設定
                                 </a>
                             </div>
@@ -318,9 +347,10 @@ export default function Step0BasicInfo({
                                 <button
                                     type="button"
                                     onClick={handleOpenUserSelectModal}
-                                    className="btn btn-primary"
-                                    style={{ whiteSpace: 'nowrap' }}
+                                    className={buttonHoverClass}
+                                    style={buttonStyle}
                                 >
+                                    <UserPen size={20} />
                                     担当者を選択
                                 </button>
                             </div>

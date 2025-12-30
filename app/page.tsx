@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Calculator } from 'lucide-react';
 import Header from '@/components/Header';
-import Button from '@/components/Button';
 import { Investor } from '@/lib/types';
 import Step0BasicInfo from '@/components/valuation/Step0BasicInfo';
 import Step1CompanySize from '@/components/valuation/Step1CompanySize';
@@ -16,6 +15,24 @@ import { validateBasicInfo } from '@/lib/utils';
 export default function Home() {
   const router = useRouter();
   const { saveValuation, isSaving } = useSaveValuation();
+
+  // 共通ボタンスタイル
+  const buttonStyle = {
+    whiteSpace: 'nowrap' as const,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: 'white',
+    color: 'black',
+    border: '1px solid #d1d5db',
+    transition: 'all 0.2s ease',
+    padding: '0.5rem 1rem',
+    borderRadius: '0.5rem',
+    fontSize: '1rem',
+    fontWeight: '500'
+  };
+
+  const buttonHoverClass = 'hover:bg-gray-200 hover:border-gray-400 cursor-pointer';
 
   const [fiscalYear, setFiscalYear] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -63,6 +80,11 @@ export default function Home() {
 
   const addInvestorRow = () => {
     setInvestors([...investors, { name: '', amount: 0 }]);
+  };
+
+  const removeInvestorRow = (index: number) => {
+    const newInvestors = investors.filter((_, i) => i !== index);
+    setInvestors(newInvestors);
   };
 
   const updateInvestor = (index: number, field: keyof Investor, value: string | number) => {
@@ -169,9 +191,6 @@ export default function Home() {
 
       <div className="card">
         <p className="text-lg mb-4">医療法人の出資持分の評価額の概算を知りたい方向けのツールです。</p>
-        <Button onClick={() => router.push('/saved-data')}>
-          保存データを読み込む
-        </Button>
       </div>
 
       <div className="card">
@@ -232,18 +251,19 @@ export default function Home() {
         investors={investors}
         updateInvestor={updateInvestor}
         addInvestorRow={addInvestorRow}
+        removeInvestorRow={removeInvestorRow}
         totalInvestment={totalInvestment}
       />
 
       <div className="flex gap-4 mt-8">
-        <Button onClick={saveToDatabase} className="flex items-center gap-2">
+        <button onClick={saveToDatabase} className={buttonHoverClass} style={buttonStyle}>
           <Save size={20} />
           保存
-        </Button>
-        <Button onClick={goToResults} className="flex items-center gap-2">
+        </button>
+        <button onClick={goToResults} className={buttonHoverClass} style={buttonStyle}>
           <Calculator size={20} />
           計算結果を確認する
-        </Button>
+        </button>
       </div>
     </div>
   );

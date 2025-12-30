@@ -2,10 +2,27 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import Button from '@/components/Button';
 
 export default function GiftTaxTable() {
   const router = useRouter();
+
+  // 共通ボタンスタイル
+  const buttonStyle = {
+    whiteSpace: 'nowrap' as const,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: 'white',
+    color: 'black',
+    border: '1px solid #d1d5db',
+    transition: 'all 0.2s ease',
+    padding: '0.5rem 1rem',
+    borderRadius: '0.5rem',
+    fontSize: '1rem',
+    fontWeight: '500'
+  };
+
+  const buttonHoverClass = 'hover:bg-gray-200 hover:border-gray-400 cursor-pointer';
 
   const goBack = () => {
     router.back();
@@ -248,13 +265,14 @@ export default function GiftTaxTable() {
 
       {/* 戻るボタン */}
       <div className="text-center mt-8">
-        <Button
-          className="text-base px-6 py-3 flex items-center gap-2"
+        <button
+          className={buttonHoverClass}
+          style={buttonStyle}
           onClick={goBack}
         >
           <ArrowLeft size={20} />
           計算結果に戻る
-        </Button>
+        </button>
       </div>
     </div>
   );

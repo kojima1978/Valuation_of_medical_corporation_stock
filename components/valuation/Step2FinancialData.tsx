@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NumericFormat } from 'react-number-format';
-import Button from '@/components/Button';
+import { ListChecks, Copy } from 'lucide-react';
 
 type Props = {
     currentPeriodNetAsset: string;
@@ -36,6 +36,23 @@ export default function Step2FinancialData({
     const [showPopup1, setShowPopup1] = useState(false);
     const [showPopup2, setShowPopup2] = useState(false);
 
+    // 共通ボタンスタイル
+    const smallButtonStyle = {
+        whiteSpace: 'nowrap' as const,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        backgroundColor: 'white',
+        color: 'black',
+        border: '1px solid #d1d5db',
+        transition: 'all 0.2s ease',
+        fontSize: '0.75rem',
+        padding: '0.25rem 0.5rem',
+        marginLeft: '0.5rem'
+    };
+
+    const buttonHoverClass = 'hover:bg-gray-200 hover:border-gray-400';
+
     return (
         <div className="card">
             <h2 className="mt-0">STEP2．決算書より医療法人の財務データを入力【単位:円】</h2>
@@ -52,12 +69,14 @@ export default function Step2FinancialData({
                     <tr>
                         <td>
                             「貸借対照表」の「純資産の部（又は資本の部）合計」の金額（注１）
-                            <Button
-                                className="ml-2 text-xs px-2 py-1"
+                            <button
+                                className={buttonHoverClass}
+                                style={smallButtonStyle}
                                 onClick={() => setShowPopup1(!showPopup1)}
                             >
+                                <ListChecks size={14} />
                                 正確な評価
-                            </Button>
+                            </button>
                             {showPopup1 && (
                                 <div className="absolute bg-white border border-gray-300 p-4 rounded-lg mt-2 text-sm max-w-md shadow-lg z-10">
                                     <button
@@ -102,12 +121,14 @@ export default function Step2FinancialData({
                     <tr>
                         <td>
                             貸借対照表の各勘定科目の金額について、相続税評価額とした金額を基に計算した「純資産」の金額を上書き入力してください。
-                            <Button
-                                className="ml-2 text-xs px-2 py-1"
+                            <button
+                                className={buttonHoverClass}
+                                style={smallButtonStyle}
                                 onClick={copyToTaxValue}
                             >
+                                <Copy size={14} />
                                 複写
-                            </Button>
+                            </button>
                         </td>
                         <td className="text-right">
                             <NumericFormat
@@ -136,12 +157,14 @@ export default function Step2FinancialData({
                     <tr>
                         <td>
                             「損益計算書」の「税引前当期純利益」の金額
-                            <Button
-                                className="ml-2 text-xs px-2 py-1"
+                            <button
+                                className={buttonHoverClass}
+                                style={smallButtonStyle}
                                 onClick={() => setShowPopup2(!showPopup2)}
                             >
+                                <ListChecks size={14} />
                                 正確な評価
-                            </Button>
+                            </button>
                             {showPopup2 && (
                                 <div className="absolute bg-white border border-gray-300 p-4 rounded-lg mt-2 text-sm max-w-md shadow-lg z-10">
                                     <button

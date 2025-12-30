@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { FormData, CalculationResult } from '@/lib/types';
 import { calculateEvaluation } from '@/lib/calculations';
-import Button from '@/components/Button';
 import { useSaveValuation } from '@/hooks/useSaveValuation';
 import { validateBasicInfo } from '@/lib/utils';
 import { toWareki } from '@/lib/date-utils';
@@ -15,6 +14,24 @@ export default function Results() {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
   const { saveValuation, isSaving } = useSaveValuation();
+
+  // 共通ボタンスタイル
+  const buttonStyle = {
+    whiteSpace: 'nowrap' as const,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: 'white',
+    color: 'black',
+    border: '1px solid #d1d5db',
+    transition: 'all 0.2s ease',
+    padding: '0.5rem 1rem',
+    borderRadius: '0.5rem',
+    fontSize: '1rem',
+    fontWeight: '500'
+  };
+
+  const buttonHoverClass = 'hover:bg-gray-200 hover:border-gray-400 cursor-pointer';
 
   useEffect(() => {
     const loadDataAndCalculate = async () => {
@@ -271,18 +288,18 @@ export default function Results() {
       </div>
 
       <div className="flex justify-center gap-4">
-        <Button onClick={goBack} className="flex items-center gap-2">
+        <button onClick={goBack} className={buttonHoverClass} style={buttonStyle}>
           <ArrowLeft size={20} />
           入力画面に戻る
-        </Button>
-        <Button onClick={saveToDatabase} className="flex items-center gap-2">
+        </button>
+        <button onClick={saveToDatabase} className={buttonHoverClass} style={buttonStyle}>
           <Save size={20} />
           保存
-        </Button>
-        <Button onClick={() => router.push('/gift-tax-table')} className="flex items-center gap-2">
+        </button>
+        <button onClick={() => router.push('/gift-tax-table')} className={buttonHoverClass} style={buttonStyle}>
           <FileText size={20} />
           相続税額早見表を見る
-        </Button>
+        </button>
       </div>
     </div>
   );
