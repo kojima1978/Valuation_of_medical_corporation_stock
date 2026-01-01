@@ -2,6 +2,7 @@
 
 import { FormData } from '@/lib/types';
 import { toWareki } from '@/lib/date-utils';
+import { buttonStyle, buttonHoverClass } from '@/lib/button-styles';
 
 interface CalculationDetailsModalProps {
   isOpen: boolean;
@@ -34,9 +35,9 @@ export default function CalculationDetailsModal({
     const C = similarData.profit_per_share;
     const D = similarData.net_asset_per_share;
 
-    // 利益の計算
-    const profitPrev = formData.currentPeriodProfit * 1000;
-    const profit2Prev = formData.previousPeriodProfit * 1000;
+    // 利益の計算（円単位）
+    const profitPrev = formData.currentPeriodProfit;
+    const profit2Prev = formData.previousPeriodProfit;
 
     const profitPerSharePrev = totalShares > 0 ? profitPrev / totalShares : 0;
     const profitPrevPerShare = Math.floor(Math.max(0, profitPerSharePrev));
@@ -47,8 +48,8 @@ export default function CalculationDetailsModal({
 
     const c = Math.min(profitPrevPerShare, profitAvgPerShare12);
 
-    // 純資産
-    const netAsset = formData.netAssetTaxValue * 1000;
+    // 純資産（円単位）
+    const netAsset = formData.netAssetTaxValue;
     const netAssetPerShare = totalShares > 0 ? netAsset / totalShares : 0;
     const d = Math.floor(netAssetPerShare);
 
@@ -61,11 +62,11 @@ export default function CalculationDetailsModal({
 
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-bold border-b-2 border-blue-500 pb-2">
+        <h3 className="text-lg font-bold border-b-2 border-gray-300 pb-2">
           1口あたりの類似業種比準価額方式による評価額の計算過程
         </h3>
 
-        <div className="bg-blue-50 p-4 rounded">
+        <div className="p-4 border border-gray-300 rounded">
           <h4 className="font-bold mb-2">【計算式】</h4>
           <p className="font-mono text-sm">
             類似業種比準価額 = A × [(c/C + d/D) ÷ 2] × 斟酌率
@@ -128,7 +129,7 @@ export default function CalculationDetailsModal({
                 <td className="py-2">純資産比準割合 (d/D)</td>
                 <td className="text-right font-mono">{ratioD.toFixed(2)}</td>
               </tr>
-              <tr className="border-b bg-yellow-50">
+              <tr className="border-b bg-gray-100">
                 <td className="py-2 font-bold">平均比準割合 [(c/C + d/D) ÷ 2]</td>
                 <td className="text-right font-mono font-bold">{avgRatio.toFixed(2)}</td>
               </tr>
@@ -144,10 +145,10 @@ export default function CalculationDetailsModal({
           <p className="text-sm">会社規模による斟酌率: {sizeMultiplier}</p>
         </div>
 
-        <div className="bg-green-50 p-4 rounded border-2 border-green-500">
+        <div className="p-4 border-2 border-gray-400 rounded bg-gray-50">
           <h4 className="font-bold mb-2">【計算結果】</h4>
           <p className="font-mono text-lg">
-            {A.toLocaleString()} × {avgRatio.toFixed(2)} × {sizeMultiplier} = <span className="font-bold text-green-700">{S_50.toLocaleString()}円</span>
+            {A.toLocaleString()} × {avgRatio.toFixed(2)} × {sizeMultiplier} = <span className="font-bold">{S_50.toLocaleString()}円</span>
           </p>
         </div>
       </div>
@@ -156,8 +157,8 @@ export default function CalculationDetailsModal({
 
   // 純資産価額の計算過程
   const renderNetAssetDetails = () => {
-    const netAssetInheritance = formData.netAssetTaxValue * 1000;
-    const netAssetBook = formData.currentPeriodNetAsset * 1000;
+    const netAssetInheritance = formData.netAssetTaxValue;
+    const netAssetBook = formData.currentPeriodNetAsset;
     const evalDiff = netAssetInheritance - netAssetBook;
     const tax = evalDiff > 0 ? evalDiff * 0.37 : 0;
     const netAssetAdjusted = netAssetInheritance - tax;
@@ -165,11 +166,11 @@ export default function CalculationDetailsModal({
 
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-bold border-b-2 border-blue-500 pb-2">
+        <h3 className="text-lg font-bold border-b-2 border-gray-300 pb-2">
           1口あたりの純資産価額方式による評価額の計算過程
         </h3>
 
-        <div className="bg-blue-50 p-4 rounded">
+        <div className="p-4 border border-gray-300 rounded">
           <h4 className="font-bold mb-2">【計算式】</h4>
           <p className="font-mono text-sm">
             純資産価額 = (相続税評価額による純資産 - 法人税等相当額) ÷ 総出資口数
@@ -188,7 +189,7 @@ export default function CalculationDetailsModal({
                 <td className="py-2">②帳簿価額による純資産（直前期）</td>
                 <td className="text-right font-mono">{netAssetBook.toLocaleString()}円</td>
               </tr>
-              <tr className="border-b bg-yellow-50">
+              <tr className="border-b bg-gray-100">
                 <td className="py-2 font-bold">③評価差額（①-②）</td>
                 <td className="text-right font-mono font-bold">{evalDiff.toLocaleString()}円</td>
               </tr>
@@ -208,7 +209,7 @@ export default function CalculationDetailsModal({
                 <td className="py-2">法人税等の実効税率</td>
                 <td className="text-right font-mono">37%</td>
               </tr>
-              <tr className="border-b bg-yellow-50">
+              <tr className="border-b bg-gray-100">
                 <td className="py-2 font-bold">法人税等相当額</td>
                 <td className="text-right font-mono font-bold">{tax.toLocaleString()}円</td>
               </tr>
@@ -231,7 +232,7 @@ export default function CalculationDetailsModal({
                 <td className="py-2">法人税等相当額</td>
                 <td className="text-right font-mono">-{tax.toLocaleString()}円</td>
               </tr>
-              <tr className="border-b bg-yellow-50">
+              <tr className="border-b bg-gray-100">
                 <td className="py-2 font-bold">調整後純資産額</td>
                 <td className="text-right font-mono font-bold">{netAssetAdjusted.toLocaleString()}円</td>
               </tr>
@@ -255,10 +256,10 @@ export default function CalculationDetailsModal({
           </table>
         </div>
 
-        <div className="bg-green-50 p-4 rounded border-2 border-green-500">
+        <div className="p-4 border-2 border-gray-400 rounded bg-gray-50">
           <h4 className="font-bold mb-2">【計算結果】</h4>
           <p className="font-mono text-lg">
-            {netAssetAdjusted.toLocaleString()} ÷ {totalShares.toLocaleString()} = <span className="font-bold text-green-700">{N.toLocaleString()}円</span>
+            {netAssetAdjusted.toLocaleString()} ÷ {totalShares.toLocaleString()} = <span className="font-bold">{N.toLocaleString()}円</span>
           </p>
         </div>
       </div>
@@ -287,7 +288,8 @@ export default function CalculationDetailsModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            className={buttonHoverClass}
+            style={buttonStyle}
           >
             閉じる
           </button>

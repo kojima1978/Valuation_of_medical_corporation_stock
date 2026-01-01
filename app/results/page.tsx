@@ -232,7 +232,7 @@ export default function Results() {
                 <button
                   type="button"
                   onClick={() => setModalOpen('similar')}
-                  className="ml-2 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center gap-1"
+                  className="ml-2 px-2 py-1 text-xs bg-white text-black border border-gray-300 rounded hover:bg-gray-200 hover:border-gray-400 cursor-pointer transition-all flex items-center gap-1"
                   title="計算過程を表示"
                 >
                   <Calculator size={14} />
@@ -265,7 +265,7 @@ export default function Results() {
                 <button
                   type="button"
                   onClick={() => setModalOpen('netAsset')}
-                  className="ml-2 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center gap-1"
+                  className="ml-2 px-2 py-1 text-xs bg-white text-black border border-gray-300 rounded hover:bg-gray-200 hover:border-gray-400 cursor-pointer transition-all flex items-center gap-1"
                   title="計算過程を表示"
                 >
                   <Calculator size={14} />

@@ -149,10 +149,10 @@ function calculateSimilarIndustryValue(
   // 配当は医療法人では0
   const b = 0;
 
-  // 利益の計算
-  const profitPrev = formData.currentPeriodProfit * 1000; // 直前期（円）
-  const profit2Prev = formData.previousPeriodProfit * 1000; // 直前々期（円）
-  const profit3Prev = formData.previousPreviousPeriodProfit * 1000; // 直前々々期（円）
+  // 利益の計算（円単位）
+  const profitPrev = formData.currentPeriodProfit; // 直前期（円）
+  const profit2Prev = formData.previousPeriodProfit; // 直前々期（円）
+  const profit3Prev = formData.previousPreviousPeriodProfit; // 直前々々期（円）
 
   // cの計算: 直前期と(直前期+直前々期)÷2の低い方
   const profitPerSharePrev = totalShares > 0 ? profitPrev / totalShares : 0;
@@ -177,18 +177,18 @@ function calculateSimilarIndustryValue(
 
   const c2 = Math.max(profit2PrevPerShare, profitAvgPerShare23);
 
-  // 純資産（直前期の相続税評価額）
-  const netAsset = formData.netAssetTaxValue * 1000;
+  // 純資産（直前期の相続税評価額）（円単位）
+  const netAsset = formData.netAssetTaxValue;
   const netAssetPerShare = totalShares > 0 ? netAsset / totalShares : 0;
   const d = Math.floor(netAssetPerShare);
 
-  // d1の計算: 直前期の帳簿価額による純資産
-  const netAsset1 = formData.currentPeriodNetAsset * 1000;
+  // d1の計算: 直前期の帳簿価額による純資産（円単位）
+  const netAsset1 = formData.currentPeriodNetAsset;
   const netAssetPerShare1 = totalShares > 0 ? netAsset1 / totalShares : 0;
   const d1 = Math.floor(netAssetPerShare1);
 
-  // d2の計算: 直前々期の純資産
-  const netAsset2 = formData.previousPeriodNetAsset * 1000;
+  // d2の計算: 直前々期の純資産（円単位）
+  const netAsset2 = formData.previousPeriodNetAsset;
   const netAssetPerShare2 = totalShares > 0 ? netAsset2 / totalShares : 0;
   const d2 = Math.floor(netAssetPerShare2);
 
@@ -243,11 +243,11 @@ function calculateNetAssetValue(
   formData: FormData,
   totalShares: number
 ): number {
-  // 相続税評価額による純資産
-  const netAssetInheritance = formData.netAssetTaxValue * 1000;
+  // 相続税評価額による純資産（円単位）
+  const netAssetInheritance = formData.netAssetTaxValue;
 
-  // 帳簿価額による純資産（簡易計算：直前期の純資産）
-  const netAssetBook = formData.currentPeriodNetAsset * 1000;
+  // 帳簿価額による純資産（簡易計算：直前期の純資産）（円単位）
+  const netAssetBook = formData.currentPeriodNetAsset;
 
   // 評価差額
   const evalDiff = netAssetInheritance - netAssetBook;
@@ -351,45 +351,50 @@ export function calculateEvaluation(formData: FormData): CalculationResult {
   // 出資持分評価額総額（千円単位）
   const totalEvaluationValue = Math.round((totalShares * perShareValue) / 1000);
 
-  // 贈与税を計算する関数
-  const calculateGiftTax = (evaluationValue: number): number => {
-    // 基礎控除後の課税価格（千円単位から万円単位に変換）
-    const taxableAmount = evaluationValue - 110; // 基礎控除110万円
+  // 贈与税を計算する関数（円単位で受け取り、千円単位で返す）
+  const calculateGiftTax = (evaluationValueYen: number): number => {
+    // 円単位から万円単位に変換
+    const evaluationValueManYen = evaluationValueYen / 10000;
+
+    // 基礎控除後の課税価格（万円単位）
+    const taxableAmount = evaluationValueManYen - 110; // 基礎控除110万円
 
     if (taxableAmount <= 0) {
       return 0; // 基礎控除以下の場合は税額0
     }
 
-    let tax = 0;
+    let taxManYen = 0;
 
     // 贈与税の速算表（一般税率）を適用
     if (taxableAmount <= 200) {
-      tax = taxableAmount * 0.1;
+      taxManYen = taxableAmount * 0.1;
     } else if (taxableAmount <= 300) {
-      tax = taxableAmount * 0.15 - 10;
+      taxManYen = taxableAmount * 0.15 - 10;
     } else if (taxableAmount <= 400) {
-      tax = taxableAmount * 0.2 - 25;
+      taxManYen = taxableAmount * 0.2 - 25;
     } else if (taxableAmount <= 600) {
-      tax = taxableAmount * 0.3 - 65;
+      taxManYen = taxableAmount * 0.3 - 65;
     } else if (taxableAmount <= 1000) {
-      tax = taxableAmount * 0.4 - 125;
+      taxManYen = taxableAmount * 0.4 - 125;
     } else if (taxableAmount <= 1500) {
-      tax = taxableAmount * 0.45 - 175;
+      taxManYen = taxableAmount * 0.45 - 175;
     } else if (taxableAmount <= 3000) {
-      tax = taxableAmount * 0.5 - 250;
+      taxManYen = taxableAmount * 0.5 - 250;
     } else {
-      tax = taxableAmount * 0.55 - 400;
+      taxManYen = taxableAmount * 0.55 - 400;
     }
 
-    return Math.round(tax);
+    // 万円単位から千円単位に変換して返す
+    return Math.round(taxManYen * 10);
   };
 
   // 各出資者の評価額と贈与税を計算
   const investorResults = formData.investors.map((investor) => {
     const amount = investor.amount || 0;
     const shares = amount / 50;
-    const evaluationValue = Math.round((shares * perShareValue) / 1000);
-    const giftTax = calculateGiftTax(evaluationValue);
+    const evaluationValueYen = shares * perShareValue; // 円単位
+    const evaluationValue = Math.round(evaluationValueYen / 1000); // 千円単位（表示用）
+    const giftTax = calculateGiftTax(evaluationValueYen); // 円単位で渡す
     return {
       name: investor.name || '',
       amount: amount,
