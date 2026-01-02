@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { buttonStyle, smallButtonStyle, btnHoverClass } from '@/lib/button-styles';
 import { handleDoubleClickToStep0, handleFormSubmit } from '@/lib/form-utils';
+import { executeRecordAction } from '@/lib/record-actions';
 
 type User = {
   id: string;
@@ -90,76 +91,34 @@ export default function UserSettingsPage() {
     }
   };
 
-  // 無効化ハンドラー
-  const handleDeactivate = async (id: string, userName: string) => {
-    if (!confirm(`${userName}を無効化しますか？\n無効化すると画面表示から見えなくなります。`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/users', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action: 'deactivate' }),
-      });
-
-      if (!response.ok) throw new Error('無効化に失敗しました');
-
-      const result = await response.json();
-      alert(result.message);
-      loadUsers();
-    } catch (error) {
-      console.error('無効化エラー:', error);
-      alert('無効化に失敗しました');
-    }
+  const handleDeactivate = (id: string, userName: string) => {
+    executeRecordAction({
+      id,
+      name: userName,
+      action: 'deactivate',
+      apiEndpoint: '/api/users',
+      onSuccess: loadUsers,
+    });
   };
 
-  // 有効化ハンドラー
-  const handleActivate = async (id: string, userName: string) => {
-    if (!confirm(`${userName}を有効化しますか？`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/users', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action: 'activate' }),
-      });
-
-      if (!response.ok) throw new Error('有効化に失敗しました');
-
-      const result = await response.json();
-      alert(result.message);
-      loadUsers();
-    } catch (error) {
-      console.error('有効化エラー:', error);
-      alert('有効化に失敗しました');
-    }
+  const handleActivate = (id: string, userName: string) => {
+    executeRecordAction({
+      id,
+      name: userName,
+      action: 'activate',
+      apiEndpoint: '/api/users',
+      onSuccess: loadUsers,
+    });
   };
 
-  // 削除ハンドラー（無効化表示画面からのみ実行可能）
-  const handleDelete = async (id: string, userName: string) => {
-    if (!confirm(`${userName}を完全に削除しますか？\nこの操作は取り消せません。`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/users', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action: 'delete' }),
-      });
-
-      if (!response.ok) throw new Error('削除に失敗しました');
-
-      const result = await response.json();
-      alert(result.message);
-      loadUsers();
-    } catch (error) {
-      console.error('削除エラー:', error);
-      alert('削除に失敗しました');
-    }
+  const handleDelete = (id: string, userName: string) => {
+    executeRecordAction({
+      id,
+      name: userName,
+      action: 'delete',
+      apiEndpoint: '/api/users',
+      onSuccess: loadUsers,
+    });
   };
 
   // 検索フィルター
