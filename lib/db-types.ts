@@ -6,6 +6,7 @@
 export interface Company {
   id: number;
   company_name: string;
+  is_active: number; // 1: 有効, 0: 無効
   created_at: string;
   updated_at: string;
 }
@@ -14,6 +15,7 @@ export interface Company {
 export interface User {
   id: number;
   name: string;
+  is_active: number; // 1: 有効, 0: 無効
   created_at: string;
   updated_at: string;
 }

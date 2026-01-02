@@ -2,37 +2,51 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Save, X, Ban, Eye, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { buttonStyle, smallButtonStyle, btnHoverClass } from '@/lib/button-styles';
-import { useCrudSettings } from '@/hooks/useCrudSettings';
 import { handleDoubleClickToStep0, handleFormSubmit } from '@/lib/form-utils';
 
 type User = {
   id: string;
   name: string;
+  is_active: number;
   created_at: string;
   updated_at: string;
 };
 
 export default function UserSettingsPage() {
   const router = useRouter();
-  const { data, loading, searchTerm, setSearchTerm, loadData, handleDelete: deleteItem, filterData } = useCrudSettings<User>({
-    apiEndpoint: '/api/users',
-    entityName: '担当者',
-    getDisplayName: (user) => user.name,
-  });
-
+  const [data, setData] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selectedId, setSelectedId] = useState('');
   const [userName, setUserName] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const buttonHoverClass = btnHoverClass;
 
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const url = showInactive ? '/api/users?showInactive=true' : '/api/users';
+      const response = await fetch(url);
+      if (response.ok) {
+        const result = await response.json();
+        setData(result);
+      }
+    } catch (error) {
+      console.error('読み込みエラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    loadData();
-  }, []);
+    loadUsers();
+  }, [showInactive]);
 
   const handleOpenCreateModal = () => {
     setFormMode('create');
@@ -70,14 +84,88 @@ export default function UserSettingsPage() {
     if (result.success) {
       alert(result.message);
       setIsFormModalOpen(false);
-      loadData();
+      loadUsers();
     } else {
       alert(result.message);
     }
   };
 
+  // 無効化ハンドラー
+  const handleDeactivate = async (id: string, userName: string) => {
+    if (!confirm(`${userName}を無効化しますか？\n無効化すると画面表示から見えなくなります。`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'deactivate' }),
+      });
+
+      if (!response.ok) throw new Error('無効化に失敗しました');
+
+      const result = await response.json();
+      alert(result.message);
+      loadUsers();
+    } catch (error) {
+      console.error('無効化エラー:', error);
+      alert('無効化に失敗しました');
+    }
+  };
+
+  // 有効化ハンドラー
+  const handleActivate = async (id: string, userName: string) => {
+    if (!confirm(`${userName}を有効化しますか？`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'activate' }),
+      });
+
+      if (!response.ok) throw new Error('有効化に失敗しました');
+
+      const result = await response.json();
+      alert(result.message);
+      loadUsers();
+    } catch (error) {
+      console.error('有効化エラー:', error);
+      alert('有効化に失敗しました');
+    }
+  };
+
+  // 削除ハンドラー（無効化表示画面からのみ実行可能）
+  const handleDelete = async (id: string, userName: string) => {
+    if (!confirm(`${userName}を完全に削除しますか？\nこの操作は取り消せません。`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'delete' }),
+      });
+
+      if (!response.ok) throw new Error('削除に失敗しました');
+
+      const result = await response.json();
+      alert(result.message);
+      loadUsers();
+    } catch (error) {
+      console.error('削除エラー:', error);
+      alert('削除に失敗しました');
+    }
+  };
+
   // 検索フィルター
-  const filteredData = filterData(data, (user) => user.name);
+  const filteredData = data.filter((user: User) =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div>
@@ -90,10 +178,20 @@ export default function UserSettingsPage() {
           <br />
           評価額計算時に選択できます。
         </p>
-        <button onClick={handleOpenCreateModal} className={buttonHoverClass} style={buttonStyle}>
-          <Plus size={20} />
-          新規登録
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleOpenCreateModal} className={buttonHoverClass} style={buttonStyle}>
+            <Plus size={20} />
+            新規登録
+          </button>
+          <button
+            onClick={() => setShowInactive(!showInactive)}
+            className={buttonHoverClass}
+            style={buttonStyle}
+          >
+            <Eye size={20} />
+            {showInactive ? '有効データのみ表示' : '無効化データを表示'}
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -125,6 +223,7 @@ export default function UserSettingsPage() {
             <thead>
               <tr>
                 <th className="text-left">担当者名</th>
+                {showInactive && <th className="text-center">状態</th>}
                 <th className="text-center">登録日時</th>
                 <th className="text-center">操作</th>
               </tr>
@@ -132,41 +231,79 @@ export default function UserSettingsPage() {
             <tbody>
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="text-center text-gray-500">
+                  <td colSpan={showInactive ? 4 : 3} className="text-center text-gray-500">
                     該当する担当者が見つかりません
                   </td>
                 </tr>
               ) : (
                 filteredData.map((record) => (
-                  <tr key={record.id}>
+                  <tr key={record.id} className={record.is_active === 0 ? 'bg-gray-100' : ''}>
                     <td
                       className="text-left cursor-pointer hover:bg-blue-50"
-                      onDoubleClick={() => handleDoubleClickToStep0('personInCharge', record.name, router)}
-                      title="ダブルクリックで選択してSTEP0に戻る"
+                      onDoubleClick={() =>
+                        record.is_active === 1 &&
+                        handleDoubleClickToStep0('personInCharge', record.name, router)
+                      }
+                      title={record.is_active === 1 ? 'ダブルクリックで選択してSTEP0に戻る' : '無効化されています'}
                     >
                       {record.name}
+                      {record.is_active === 0 && (
+                        <span className="ml-2 text-xs text-gray-500">(無効)</span>
+                      )}
                     </td>
+                    {showInactive && (
+                      <td className="text-center">
+                        {record.is_active === 1 ? (
+                          <span className="text-black font-medium">有効</span>
+                        ) : (
+                          <span className="text-gray-500 font-medium">無効</span>
+                        )}
+                      </td>
+                    )}
                     <td className="text-center">
                       {new Date(record.created_at).toLocaleString('ja-JP')}
                     </td>
                     <td className="text-center">
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleOpenEditModal(record)}
-                          className={buttonHoverClass}
-                          style={smallButtonStyle}
-                        >
-                          <Edit2 size={16} />
-                          修正
-                        </button>
-                        <button
-                          onClick={() => deleteItem(record.id, record.name)}
-                          className={buttonHoverClass}
-                          style={smallButtonStyle}
-                        >
-                          <Trash2 size={16} />
-                          削除
-                        </button>
+                        {record.is_active === 1 ? (
+                          <>
+                            <button
+                              onClick={() => handleOpenEditModal(record)}
+                              className={buttonHoverClass}
+                              style={smallButtonStyle}
+                            >
+                              <Edit2 size={16} />
+                              修正
+                            </button>
+                            <button
+                              onClick={() => handleDeactivate(record.id, record.name)}
+                              className={buttonHoverClass}
+                              style={smallButtonStyle}
+                            >
+                              <Ban size={16} />
+                              無効化
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleActivate(record.id, record.name)}
+                              className={buttonHoverClass}
+                              style={smallButtonStyle}
+                            >
+                              <RefreshCw size={16} />
+                              有効化
+                            </button>
+                            <button
+                              onClick={() => handleDelete(record.id, record.name)}
+                              className={buttonHoverClass}
+                              style={smallButtonStyle}
+                            >
+                              <Trash2 size={16} />
+                              削除
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

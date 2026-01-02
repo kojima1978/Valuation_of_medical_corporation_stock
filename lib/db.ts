@@ -18,6 +18,7 @@ function initializeDatabase(database: Database.Database) {
     CREATE TABLE IF NOT EXISTS companies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_name TEXT NOT NULL UNIQUE,
+      is_active INTEGER NOT NULL DEFAULT 1,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     );
@@ -26,6 +27,7 @@ function initializeDatabase(database: Database.Database) {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
+      is_active INTEGER NOT NULL DEFAULT 1,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     );
