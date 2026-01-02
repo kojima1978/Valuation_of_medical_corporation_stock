@@ -81,10 +81,12 @@ docker-compose up prod
 
 データベーススキーマの変更が必要な場合は、`scripts/` ディレクトリにマイグレーションスクリプトを作成します。
 
+例:
 ```bash
-npx tsx scripts/add-is-active-to-companies.ts
-npx tsx scripts/add-is-active-to-users.ts
+npx tsx scripts/migration-script-name.ts
 ```
+
+**注**: 論理削除機能のマイグレーション（is_active カラム追加）は既に完了しています。
 
 ## 技術スタック
 
@@ -129,9 +131,6 @@ doctor-nextjs/
 │   └── api-utils.ts                  # API共通処理
 ├── data/
 │   └── doctor.db                     # SQLiteデータベース
-├── scripts/
-│   ├── add-is-active-to-companies.ts # 会社テーブル移行スクリプト
-│   └── add-is-active-to-users.ts     # 担当者テーブル移行スクリプト
 ├── docs/
 │   └── er-diagram.md                 # データベースER図
 ├── Dockerfile                        # Docker設定
