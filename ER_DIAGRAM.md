@@ -79,6 +79,7 @@
                   │     profit_per_share (REAL)      │
                   │     net_asset_per_share (REAL)   │
                   │     average_stock_price (REAL)   │
+                  │     is_active (INTEGER)          │
                   │     created_at (DATETIME)        │
                   │     updated_at (DATETIME)        │
                   └──────────────────────────────────┘
@@ -167,10 +168,13 @@
 | profit_per_share | REAL | NOT NULL DEFAULT 51 | 1口あたり利益 |
 | net_asset_per_share | REAL | NOT NULL DEFAULT 395 | 1口あたり純資産 |
 | average_stock_price | REAL | NOT NULL DEFAULT 532 | 平均株価 |
+| is_active | INTEGER | NOT NULL DEFAULT 1 | 有効フラグ（1:有効, 0:無効）論理削除用 |
 | created_at | DATETIME | DEFAULT (datetime('now', 'localtime')) | 作成日時 |
 | updated_at | DATETIME | DEFAULT (datetime('now', 'localtime')) | 更新日時 |
 
 **用途**: 評価額計算時に年度に応じた類似業種の株価データを参照
+
+**論理削除**: `is_active = 0` で無効化。データの整合性を維持しながら削除扱いとする。
 
 ## リレーションシップの詳細
 
@@ -354,6 +358,7 @@ erDiagram
         REAL profit_per_share
         REAL net_asset_per_share
         REAL average_stock_price
+        INTEGER is_active
         DATETIME created_at
         DATETIME updated_at
     }

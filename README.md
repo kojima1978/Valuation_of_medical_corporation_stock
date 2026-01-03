@@ -75,9 +75,9 @@ docker-compose up prod
 - **valuations**: 評価レコード
 - **financial_data**: 財務データ
 - **investors**: 出資者情報
-- **similar_industry_data**: 類似業種データ
+- **similar_industry_data**: 類似業種データマスタ（論理削除対応）
 
-詳細は [docs/er-diagram.md](docs/er-diagram.md) を参照してください。
+詳細は [ER_DIAGRAM.md](ER_DIAGRAM.md) を参照してください。
 
 ### マイグレーション
 
