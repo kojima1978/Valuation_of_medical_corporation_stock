@@ -7,11 +7,12 @@ export async function GET(request: NextRequest) {
     const db = getDatabase();
     const { searchParams } = new URL(request.url);
     const fiscalYear = searchParams.get('fiscalYear');
+    const showInactive = searchParams.get('showInactive') === 'true';
 
     if (fiscalYear) {
-      // 特定年度のデータを取得
+      // 特定年度のデータを取得（有効なデータのみ）
       const data = db
-        .prepare('SELECT * FROM similar_industry_data WHERE fiscal_year = ?')
+        .prepare('SELECT * FROM similar_industry_data WHERE fiscal_year = ? AND is_active = 1')
         .get(fiscalYear);
 
       if (!data) {
@@ -27,9 +28,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data);
     } else {
       // 全年度のデータを取得
-      const allData = db
-        .prepare('SELECT * FROM similar_industry_data ORDER BY fiscal_year DESC')
-        .all();
+      const query = showInactive
+        ? 'SELECT * FROM similar_industry_data ORDER BY fiscal_year DESC'
+        : 'SELECT * FROM similar_industry_data WHERE is_active = 1 ORDER BY fiscal_year DESC';
+
+      const allData = db.prepare(query).all();
       return NextResponse.json(allData);
     }
   }, '類似業種データの取得に失敗しました');
@@ -60,9 +63,9 @@ export async function POST(request: NextRequest) {
 
     const db = getDatabase();
 
-    // 既存チェック
+    // 既存チェック（有効なデータのみ）
     const existing = db
-      .prepare('SELECT id FROM similar_industry_data WHERE fiscal_year = ?')
+      .prepare('SELECT id FROM similar_industry_data WHERE fiscal_year = ? AND is_active = 1')
       .get(fiscal_year);
 
     if (existing) {
@@ -74,8 +77,8 @@ export async function POST(request: NextRequest) {
 
     // 新規作成
     db.prepare(`
-      INSERT INTO similar_industry_data (fiscal_year, profit_per_share, net_asset_per_share, average_stock_price)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO similar_industry_data (fiscal_year, profit_per_share, net_asset_per_share, average_stock_price, is_active)
+      VALUES (?, ?, ?, ?, 1)
     `).run(fiscal_year, profit_per_share, net_asset_per_share, average_stock_price);
 
     return NextResponse.json({
@@ -122,9 +125,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // 年度の重複チェック（自分以外）
+    // 年度の重複チェック（自分以外、有効なデータのみ）
     const duplicate = db
-      .prepare('SELECT id FROM similar_industry_data WHERE fiscal_year = ? AND id != ?')
+      .prepare('SELECT id FROM similar_industry_data WHERE fiscal_year = ? AND id != ? AND is_active = 1')
       .get(fiscal_year, id);
 
     if (duplicate) {
@@ -148,6 +151,62 @@ export async function PUT(request: NextRequest) {
   }, '類似業種データの更新に失敗しました');
 }
 
+export async function PATCH(request: NextRequest) {
+  return withErrorHandler(async () => {
+    const { id, action } = await request.json();
+
+    if (!id || !action) {
+      return NextResponse.json(
+        { error: 'IDとアクションを指定してください' },
+        { status: 400 }
+      );
+    }
+
+    const db = getDatabase();
+
+    if (action === 'deactivate') {
+      // 無効化
+      const result = db
+        .prepare('UPDATE similar_industry_data SET is_active = 0, updated_at = datetime(\'now\', \'localtime\') WHERE id = ?')
+        .run(id);
+
+      if (result.changes === 0) {
+        return NextResponse.json(
+          { error: 'データが見つかりません' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: '類似業種データを無効化しました',
+      });
+    } else if (action === 'activate') {
+      // 有効化
+      const result = db
+        .prepare('UPDATE similar_industry_data SET is_active = 1, updated_at = datetime(\'now\', \'localtime\') WHERE id = ?')
+        .run(id);
+
+      if (result.changes === 0) {
+        return NextResponse.json(
+          { error: 'データが見つかりません' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: '類似業種データを有効化しました',
+      });
+    } else {
+      return NextResponse.json(
+        { error: '無効なアクションです' },
+        { status: 400 }
+      );
+    }
+  }, '類似業種データの更新に失敗しました');
+}
+
 export async function DELETE(request: NextRequest) {
   return withErrorHandler(async () => {
     const { searchParams } = new URL(request.url);
@@ -161,6 +220,26 @@ export async function DELETE(request: NextRequest) {
     }
 
     const db = getDatabase();
+
+    // 物理削除（無効化されたデータのみ）
+    const record = db
+      .prepare('SELECT is_active FROM similar_industry_data WHERE id = ?')
+      .get(id) as { is_active: number } | undefined;
+
+    if (!record) {
+      return NextResponse.json(
+        { error: 'データが見つかりません' },
+        { status: 404 }
+      );
+    }
+
+    if (record.is_active === 1) {
+      return NextResponse.json(
+        { error: '有効なデータは削除できません。先に無効化してください' },
+        { status: 400 }
+      );
+    }
+
     const result = db.prepare('DELETE FROM similar_industry_data WHERE id = ?').run(id);
 
     if (result.changes === 0) {

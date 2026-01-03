@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Save, X, Ban, Eye, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { toWareki } from '@/lib/date-utils';
 import { buttonStyle, smallButtonStyle, btnHoverClass } from '@/lib/button-styles';
+import { handleFormSubmit } from '@/lib/form-utils';
+import { executeRecordAction } from '@/lib/record-actions';
 
 type SimilarIndustryData = {
   id: string;
@@ -14,6 +16,7 @@ type SimilarIndustryData = {
   profit_per_share: number;
   net_asset_per_share: number;
   average_stock_price: number;
+  is_active: number;
   created_at: string;
   updated_at: string;
 };
@@ -25,26 +28,22 @@ export default function SimilarIndustrySettingsPage() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selectedId, setSelectedId] = useState('');
-  const [fiscalYear, setFiscalYear] = useState('');
-  const [profitPerShare, setProfitPerShare] = useState('51');
-  const [netAssetPerShare, setNetAssetPerShare] = useState('395');
-  const [averageStockPrice, setAverageStockPrice] = useState('532');
-
-  useEffect(() => {
-    loadData();
-  }, []);
+  const [selectedFields, setSelectedFields] = useState({
+    fiscal_year: '',
+    profit_per_share: '',
+    net_asset_per_share: '',
+    average_stock_price: '',
+  });
+  const [showInactive, setShowInactive] = useState(false);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/similar-industry');
+      const url = showInactive ? '/api/similar-industry?showInactive=true' : '/api/similar-industry';
+      const response = await fetch(url);
       if (response.ok) {
         const result = await response.json();
-        // 年度の降順（新しい年度が上）にソート
-        const sortedData = result.sort((a: SimilarIndustryData, b: SimilarIndustryData) => {
-          return parseInt(b.fiscal_year) - parseInt(a.fiscal_year);
-        });
-        setData(sortedData);
+        setData(result);
       }
     } catch (error) {
       console.error('読み込みエラー:', error);
@@ -53,89 +52,108 @@ export default function SimilarIndustrySettingsPage() {
     }
   };
 
+  useEffect(() => {
+    loadData();
+  }, [showInactive]);
+
+  const getRegisteredYears = (): string[] => {
+    // アクティブなレコードのみから年度を取得
+    const activeRecords = data.filter((record) => record.is_active === 1);
+    return activeRecords.map((record) => record.fiscal_year).sort((a, b) => b.localeCompare(a));
+  };
+
   const handleOpenCreateModal = () => {
     setFormMode('create');
     setSelectedId('');
-    setFiscalYear('');
-    setProfitPerShare('51');
-    setNetAssetPerShare('395');
-    setAverageStockPrice('532');
+    setSelectedFields({
+      fiscal_year: '',
+      profit_per_share: '',
+      net_asset_per_share: '',
+      average_stock_price: '',
+    });
     setIsFormModalOpen(true);
-  };
-
-  // 登録済みの年度一覧を取得
-  const getRegisteredYears = () => {
-    return new Set(data.map(record => record.fiscal_year));
   };
 
   const handleOpenEditModal = (record: SimilarIndustryData) => {
     setFormMode('edit');
     setSelectedId(record.id);
-    setFiscalYear(record.fiscal_year);
-    setProfitPerShare(record.profit_per_share.toString());
-    setNetAssetPerShare(record.net_asset_per_share.toString());
-    setAverageStockPrice(record.average_stock_price.toString());
+    setSelectedFields({
+      fiscal_year: record.fiscal_year,
+      profit_per_share: record.profit_per_share.toString(),
+      net_asset_per_share: record.net_asset_per_share.toString(),
+      average_stock_price: record.average_stock_price.toString(),
+    });
     setIsFormModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fiscalYear || !profitPerShare || !netAssetPerShare || !averageStockPrice) {
+    if (!selectedFields.fiscal_year || !selectedFields.fiscal_year.trim()) {
+      alert('年度を選択してください。');
+      return;
+    }
+
+    if (
+      !selectedFields.profit_per_share ||
+      !selectedFields.net_asset_per_share ||
+      !selectedFields.average_stock_price
+    ) {
       alert('すべての項目を入力してください。');
       return;
     }
 
     const requestData = {
       id: selectedId,
-      fiscal_year: fiscalYear,
-      profit_per_share: parseFloat(profitPerShare),
-      net_asset_per_share: parseFloat(netAssetPerShare),
-      average_stock_price: parseFloat(averageStockPrice),
+      fiscal_year: selectedFields.fiscal_year,
+      profit_per_share: parseFloat(selectedFields.profit_per_share),
+      net_asset_per_share: parseFloat(selectedFields.net_asset_per_share),
+      average_stock_price: parseFloat(selectedFields.average_stock_price),
     };
 
-    try {
-      const response = await fetch('/api/similar-industry', {
-        method: formMode === 'create' ? 'POST' : 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData),
-      });
+    const result = await handleFormSubmit(
+      '/api/similar-industry',
+      formMode === 'create' ? 'POST' : 'PUT',
+      requestData
+    );
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || '保存に失敗しました');
-      }
-
-      alert(result.message || '保存しました');
+    if (result.success) {
+      alert(result.message);
       setIsFormModalOpen(false);
       loadData();
-    } catch (error) {
-      console.error('保存エラー:', error);
-      alert(error instanceof Error ? error.message : '保存に失敗しました');
+    } else {
+      alert(result.message);
     }
   };
 
-  const handleDelete = async (id: string, fiscalYear: string) => {
-    if (!confirm(`${fiscalYear}年度のデータを削除しますか？`)) {
-      return;
-    }
+  const handleDeactivate = (id: string, fiscal_year: string) => {
+    executeRecordAction({
+      id,
+      name: fiscal_year,
+      action: 'deactivate',
+      apiEndpoint: '/api/similar-industry',
+      onSuccess: loadData,
+    });
+  };
 
-    try {
-      const response = await fetch(`/api/similar-industry?id=${id}`, {
-        method: 'DELETE',
-      });
+  const handleActivate = (id: string, fiscal_year: string) => {
+    executeRecordAction({
+      id,
+      name: fiscal_year,
+      action: 'activate',
+      apiEndpoint: '/api/similar-industry',
+      onSuccess: loadData,
+    });
+  };
 
-      if (!response.ok) {
-        throw new Error('削除に失敗しました');
-      }
-
-      alert('データを削除しました');
-      loadData();
-    } catch (error) {
-      console.error('削除エラー:', error);
-      alert('削除に失敗しました');
-    }
+  const handleDelete = (id: string, fiscal_year: string) => {
+    executeRecordAction({
+      id,
+      name: fiscal_year,
+      action: 'delete',
+      apiEndpoint: '/api/similar-industry',
+      onSuccess: loadData,
+    });
   };
 
   return (
@@ -145,14 +163,24 @@ export default function SimilarIndustrySettingsPage() {
 
       <div className="card">
         <p className="mb-4">
-          年度ごとの類似業種データ（医療・福祉業）を管理します。
+          類似業種データを管理します。
           <br />
-          評価額計算時に、選択した年度のデータが自動的に使用されます。
+          評価額計算時に使用されます。
         </p>
-        <button onClick={handleOpenCreateModal} className={btnHoverClass} style={buttonStyle}>
-          <Plus size={20} />
-          新規登録
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleOpenCreateModal} className={btnHoverClass} style={buttonStyle}>
+            <Plus size={20} />
+            新規登録
+          </button>
+          <button
+            onClick={() => setShowInactive(!showInactive)}
+            className={btnHoverClass}
+            style={buttonStyle}
+          >
+            <Eye size={20} />
+            {showInactive ? '有効データのみ表示' : '無効化データを表示'}
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -168,42 +196,92 @@ export default function SimilarIndustrySettingsPage() {
           <table>
             <thead>
               <tr>
-                <th className="text-center">年度</th>
-                <th className="text-right">類似業種の利益</th>
-                <th className="text-right">類似業種の純資産</th>
-                <th className="text-right">平均株価</th>
+                <th className="text-left">年度</th>
+                <th className="text-center">1株利益（円）</th>
+                <th className="text-center">1株純資産（円）</th>
+                <th className="text-center">平均株価（円）</th>
+                {showInactive && <th className="text-center">状態</th>}
+                <th className="text-center">登録日時</th>
                 <th className="text-center">操作</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((record) => (
-                <tr key={record.id}>
-                  <td className="text-center">{toWareki(record.fiscal_year)}年度</td>
-                  <td className="text-right">{record.profit_per_share}円</td>
-                  <td className="text-right">{record.net_asset_per_share}円</td>
-                  <td className="text-right">{record.average_stock_price}円</td>
-                  <td className="text-center">
-                    <div className="flex gap-2 justify-center">
-                      <button
-                        onClick={() => handleOpenEditModal(record)}
-                        className={btnHoverClass}
-                        style={smallButtonStyle}
-                      >
-                        <Edit2 size={16} />
-                        修正
-                      </button>
-                      <button
-                        onClick={() => handleDelete(record.id, toWareki(record.fiscal_year))}
-                        className={btnHoverClass}
-                        style={smallButtonStyle}
-                      >
-                        <Trash2 size={16} />
-                        削除
-                      </button>
-                    </div>
+              {data.length === 0 ? (
+                <tr>
+                  <td colSpan={showInactive ? 7 : 6} className="text-center text-gray-500">
+                    該当するデータが見つかりません
                   </td>
                 </tr>
-              ))}
+              ) : (
+                data.map((record) => (
+                  <tr key={record.id} className={record.is_active === 0 ? 'bg-gray-100' : ''}>
+                    <td className="text-left">
+                      {toWareki(parseInt(record.fiscal_year))} ({record.fiscal_year}年)
+                      {record.is_active === 0 && (
+                        <span className="ml-2 text-xs text-gray-500">(無効)</span>
+                      )}
+                    </td>
+                    <td className="text-center">{record.profit_per_share.toLocaleString()}</td>
+                    <td className="text-center">{record.net_asset_per_share.toLocaleString()}</td>
+                    <td className="text-center">{record.average_stock_price.toLocaleString()}</td>
+                    {showInactive && (
+                      <td className="text-center">
+                        {record.is_active === 1 ? (
+                          <span className="text-black font-medium">有効</span>
+                        ) : (
+                          <span className="text-gray-500 font-medium">無効</span>
+                        )}
+                      </td>
+                    )}
+                    <td className="text-center">
+                      {new Date(record.created_at).toLocaleString('ja-JP')}
+                    </td>
+                    <td className="text-center">
+                      <div className="flex gap-2 justify-center">
+                        {record.is_active === 1 ? (
+                          <>
+                            <button
+                              onClick={() => handleOpenEditModal(record)}
+                              className={btnHoverClass}
+                              style={smallButtonStyle}
+                            >
+                              <Edit2 size={16} />
+                              修正
+                            </button>
+                            <button
+                              onClick={() => handleDeactivate(record.id, record.fiscal_year)}
+                              className={btnHoverClass}
+                              style={smallButtonStyle}
+                            >
+                              <Ban size={16} />
+                              無効化
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleActivate(record.id, record.fiscal_year)}
+                              className={btnHoverClass}
+                              style={smallButtonStyle}
+                            >
+                              <RefreshCw size={16} />
+                              有効化
+                            </button>
+                            <button
+                              onClick={() => handleDelete(record.id, record.fiscal_year)}
+                              className={btnHoverClass}
+                              style={smallButtonStyle}
+                            >
+                              <Trash2 size={16} />
+                              削除
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -225,55 +303,67 @@ export default function SimilarIndustrySettingsPage() {
       >
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">年度（西暦）</label>
-            <select
-              value={fiscalYear}
-              onChange={(e) => setFiscalYear(e.target.value)}
-              required
-              disabled={formMode === 'edit'}
-            >
-              <option value="">選択してください</option>
-              {Array.from({ length: 11 }, (_, i) => {
-                const currentYear = new Date().getFullYear();
-                return currentYear + 5 - i;
-              })
-                .filter((year) => {
+            <label className="block text-sm font-medium mb-2">年度</label>
+            {formMode === 'create' ? (
+              <select
+                value={selectedFields.fiscal_year}
+                onChange={(e) =>
+                  setSelectedFields({ ...selectedFields, fiscal_year: e.target.value })
+                }
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">選択してください</option>
+                {Array.from({ length: 30 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
                   const registeredYears = getRegisteredYears();
-                  // 新規作成時は登録済み年度を除外、修正時は全て表示
-                  return formMode === 'edit' || !registeredYears.has(year.toString());
-                })
-                .map((year) => (
-                  <option key={year} value={year.toString()}>
-                    {toWareki(year)}年度
-                  </option>
-                ))}
-            </select>
-            {formMode === 'edit' && (
-              <p className="text-sm text-gray-600 mt-1">
-                ※年度は変更できません
-              </p>
+                  if (registeredYears.includes(year.toString())) {
+                    return null;
+                  }
+                  return (
+                    <option key={year} value={year.toString()}>
+                      {toWareki(year)} ({year}年)
+                    </option>
+                  );
+                }).filter(Boolean)}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={`${toWareki(parseInt(selectedFields.fiscal_year))} (${selectedFields.fiscal_year}年)`}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+              />
             )}
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">類似業種の利益（円）</label>
+            <label className="block text-sm font-medium mb-2">1株利益（円）</label>
             <input
               type="number"
               step="0.01"
-              value={profitPerShare}
-              onChange={(e) => setProfitPerShare(e.target.value)}
+              value={selectedFields.profit_per_share}
+              onChange={(e) =>
+                setSelectedFields({ ...selectedFields, profit_per_share: e.target.value })
+              }
               required
+              placeholder="例：1000.50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">類似業種の純資産（円）</label>
+            <label className="block text-sm font-medium mb-2">1株純資産（円）</label>
             <input
               type="number"
               step="0.01"
-              value={netAssetPerShare}
-              onChange={(e) => setNetAssetPerShare(e.target.value)}
+              value={selectedFields.net_asset_per_share}
+              onChange={(e) =>
+                setSelectedFields({ ...selectedFields, net_asset_per_share: e.target.value })
+              }
               required
+              placeholder="例：5000.50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -282,9 +372,13 @@ export default function SimilarIndustrySettingsPage() {
             <input
               type="number"
               step="0.01"
-              value={averageStockPrice}
-              onChange={(e) => setAverageStockPrice(e.target.value)}
+              value={selectedFields.average_stock_price}
+              onChange={(e) =>
+                setSelectedFields({ ...selectedFields, average_stock_price: e.target.value })
+              }
               required
+              placeholder="例：50000.50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
