@@ -17,7 +17,7 @@ export default function Step1CompanySize({
 }: Props) {
     return (
         <div className="card">
-            <h2 className="mt-0">STEP１．医療法人の規模を判定するためのデータを選択する</h2>
+            <h2 className="mt-0">STEP１．医療法人の規模を判定するためのデータを選択する（「小売・サービス業」）</h2>
             <table>
                 <tbody>
                     <tr>

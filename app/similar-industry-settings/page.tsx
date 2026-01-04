@@ -159,7 +159,7 @@ export default function SimilarIndustrySettingsPage() {
   return (
     <div>
       <Header />
-      <h1>類似業種データ設定</h1>
+      <h1>類似業種データ設定（業種目を「その他の産業」として評価）</h1>
 
       <div className="card">
         <p className="mb-4">
