@@ -1,11 +1,17 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
+import fs from 'fs';
+
 const dbPath = path.join(process.cwd(), 'data', 'doctor.db');
 let db: Database.Database | null = null;
 
 export function getDatabase() {
   if (!db) {
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
     db = new Database(dbPath);
     initializeDatabase(db);
   }
