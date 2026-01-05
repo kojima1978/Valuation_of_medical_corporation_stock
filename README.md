@@ -14,7 +14,7 @@
 ### マスタデータ管理
 - **会社マスタ設定**: 会社情報の登録・編集・論理削除
 - **担当者マスタ設定**: 担当者情報の登録・編集・論理削除
-- **類似業種データ設定**: 類似業種比準方式の基準値管理
+- **類似業種データ設定**: 類似業種比準方式の基準値管理（基本情報の年度と連動）
 
 ### データ管理機能
 - **保存データ一覧**: 過去の評価計算の閲覧・読込・削除
@@ -41,7 +41,7 @@ npm install
 npm run dev
 ```
 
-ブラウザで [http://localhost:3000](http://localhost:3000) を開いてください。
+ブラウザで [http://localhost:3000](http://localhost:3000) を開いてください。（Docker使用時は後述のポートになります）
 
 ## ビルド
 
@@ -162,7 +162,11 @@ docker-compose logs prod
 docker-compose logs -f dev
 ```
 
-#### 2. コンテナの再起動
+#### 2. アプリケーションへのアクセス
+- **開発環境**: [http://localhost:3010](http://localhost:3010)
+- **本番環境**: [http://localhost:3011](http://localhost:3011)
+
+#### 3. コンテナの再起動
 ```bash
 # コンテナを停止して再起動
 docker-compose down
@@ -215,8 +219,9 @@ docker-compose up dev
 netstat -ano | findstr :3000
 
 # docker-compose.ymlでポート番号を変更
+# docker-compose.ymlでポート番号を変更
 ports:
-  - "3001:3000"  # ホスト側のポートを変更
+  - "3012:3010"  # ホスト側のポートを変更（内部は3010）
 ```
 
 **本番環境の自動再起動**

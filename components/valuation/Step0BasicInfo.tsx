@@ -135,7 +135,7 @@ export default function Step0BasicInfo({
                                     ))}
                                 </select>
                                 <a
-                                    href="/similar-industry-settings"
+                                    href={`/similar-industry-settings?year=${fiscalYear}`}
                                     className={btnHoverClass}
                                     style={{ ...buttonStyle, textDecoration: 'none' }}
                                 >

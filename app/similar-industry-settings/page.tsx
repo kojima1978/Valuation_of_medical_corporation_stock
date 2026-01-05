@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Plus, Edit2, Save, X, Ban, Eye, RefreshCw, Trash2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -21,20 +21,29 @@ type SimilarIndustryData = {
   updated_at: string;
 };
 
-export default function SimilarIndustrySettingsPage() {
+function SimilarIndustrySettingsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialYear = searchParams.get('year');
   const [data, setData] = useState<SimilarIndustryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selectedId, setSelectedId] = useState('');
   const [selectedFields, setSelectedFields] = useState({
-    fiscal_year: '',
+    fiscal_year: initialYear || '',
     profit_per_share: '',
     net_asset_per_share: '',
     average_stock_price: '',
   });
   const [showInactive, setShowInactive] = useState(false);
+
+  // Update fiscal_year when initialYear changes (e.g. navigation)
+  useEffect(() => {
+    if (initialYear) {
+      setSelectedFields(prev => ({ ...prev, fiscal_year: initialYear }));
+    }
+  }, [initialYear]);
 
   const loadData = async () => {
     try {
@@ -66,7 +75,7 @@ export default function SimilarIndustrySettingsPage() {
     setFormMode('create');
     setSelectedId('');
     setSelectedFields({
-      fiscal_year: '',
+      fiscal_year: initialYear || '',
       profit_per_share: '',
       net_asset_per_share: '',
       average_stock_price: '',
@@ -338,7 +347,7 @@ export default function SimilarIndustrySettingsPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">1株利益（円）</label>
+            <label className="block text-sm font-medium mb-2">C:利益金額（円）</label>
             <input
               type="number"
               step="0.01"
@@ -347,13 +356,13 @@ export default function SimilarIndustrySettingsPage() {
                 setSelectedFields({ ...selectedFields, profit_per_share: e.target.value })
               }
               required
-              placeholder="例：1000.50"
+              placeholder="例：51"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">1株純資産（円）</label>
+            <label className="block text-sm font-medium mb-2">D:簿価株純資産価格（円）</label>
             <input
               type="number"
               step="0.01"
@@ -362,13 +371,13 @@ export default function SimilarIndustrySettingsPage() {
                 setSelectedFields({ ...selectedFields, net_asset_per_share: e.target.value })
               }
               required
-              placeholder="例：5000.50"
+              placeholder="例：395"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">平均株価（円）</label>
+            <label className="block text-sm font-medium mb-2">A:平均株価（円）</label>
             <input
               type="number"
               step="0.01"
@@ -377,7 +386,7 @@ export default function SimilarIndustrySettingsPage() {
                 setSelectedFields({ ...selectedFields, average_stock_price: e.target.value })
               }
               required
-              placeholder="例：50000.50"
+              placeholder="例：532"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -400,5 +409,13 @@ export default function SimilarIndustrySettingsPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+export default function SimilarIndustrySettingsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SimilarIndustrySettingsContent />
+    </Suspense>
   );
 }
