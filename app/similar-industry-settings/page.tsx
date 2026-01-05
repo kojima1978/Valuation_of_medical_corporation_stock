@@ -206,9 +206,9 @@ function SimilarIndustrySettingsContent() {
             <thead>
               <tr>
                 <th className="text-left">年度</th>
-                <th className="text-center">1株利益（円）</th>
-                <th className="text-center">1株純資産（円）</th>
-                <th className="text-center">平均株価（円）</th>
+                <th className="text-center">C:利益金額（円）</th>
+                <th className="text-center">D:簿価純資産価格（円）</th>
+                <th className="text-center">A:平均株価（円）</th>
                 {showInactive && <th className="text-center">状態</th>}
                 <th className="text-center">登録日時</th>
                 <th className="text-center">操作</th>
@@ -368,7 +368,7 @@ function SimilarIndustrySettingsContent() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">D:簿価株純資産価格（円）</label>
+            <label className="block text-sm font-medium mb-2">D:簿価純資産価格（円）</label>
             <input
               type="number"
               step="0.01"
