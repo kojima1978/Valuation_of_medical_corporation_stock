@@ -323,18 +323,24 @@ function SimilarIndustrySettingsContent() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">選択してください</option>
-                {Array.from({ length: 30 }, (_, i) => {
-                  const year = new Date().getFullYear() - i;
-                  const registeredYears = getRegisteredYears();
-                  if (registeredYears.includes(year.toString())) {
-                    return null;
+                {(() => {
+                  const currentYear = new Date().getFullYear();
+                  const yearOptions = [];
+                  for (let i = currentYear + 5; i >= currentYear - 5; i--) {
+                    yearOptions.push(i);
                   }
-                  return (
-                    <option key={year} value={year.toString()}>
-                      {toWareki(year)} ({year}年)
-                    </option>
-                  );
-                }).filter(Boolean)}
+                  return yearOptions.map((year) => {
+                    const registeredYears = getRegisteredYears();
+                    if (registeredYears.includes(year.toString())) {
+                      return null;
+                    }
+                    return (
+                      <option key={year} value={year.toString()}>
+                        {toWareki(year)} ({year}年)
+                      </option>
+                    );
+                  });
+                })()}
               </select>
             ) : (
               <input
