@@ -91,6 +91,26 @@ export default function Home() {
     }
   };
 
+  const saveCurrentFormData = () => {
+    const formData = {
+      ...(currentDataId ? { id: currentDataId } : {}),
+      fiscalYear,
+      companyName,
+      personInCharge,
+      employees,
+      totalAssets,
+      sales,
+      currentPeriodNetAsset,
+      previousPeriodNetAsset,
+      netAssetTaxValue,
+      currentPeriodProfit,
+      previousPeriodProfit,
+      previousPreviousPeriodProfit,
+      investors,
+    };
+    localStorage.setItem('formData', JSON.stringify(formData));
+  };
+
   const validateAllSteps = () => {
     const basicValidation = validateBasicInfo({ fiscalYear, companyName, personInCharge });
     if (!basicValidation.isValid) {
@@ -212,6 +232,7 @@ export default function Home() {
         setCompanyName={setCompanyName}
         personInCharge={personInCharge}
         setPersonInCharge={setPersonInCharge}
+        onBeforeNavigate={saveCurrentFormData}
       />
 
       <Step1CompanySize

@@ -16,7 +16,7 @@ export default function Results() {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
   const { saveOverwrite, isSaving } = useSaveValuation();
-  const [modalOpen, setModalOpen] = useState<'similar' | 'netAsset' | null>(null);
+  const [modalOpen, setModalOpen] = useState<'similar' | 'netAsset' | 'perShare' | null>(null);
 
   useEffect(() => {
     const loadDataAndCalculate = async () => {
@@ -238,6 +238,12 @@ export default function Results() {
               <td className="text-right">{result.perShareSimilarIndustryValue.toLocaleString('ja-JP')}円</td>
             </tr>
             <tr>
+              <td className="pl-6">類似業種の{formData?.fiscalYear ? `${toWareki(formData.fiscalYear)}年度` : '令和6年度'}平均株価</td>
+              <td className="text-right">
+                {formData?.similarIndustryData?.average_stock_price ?? 532}円
+              </td>
+            </tr>
+            <tr>
               <td className="pl-6">類似業種の利益</td>
               <td className="text-right">
                 {formData?.similarIndustryData?.profit_per_share ?? 51}円
@@ -247,12 +253,6 @@ export default function Results() {
               <td className="pl-6">類似業種の純資産</td>
               <td className="text-right">
                 {formData?.similarIndustryData?.net_asset_per_share ?? 395}円
-              </td>
-            </tr>
-            <tr>
-              <td className="pl-6">類似業種の{formData?.fiscalYear ? `${toWareki(formData.fiscalYear)}年度` : '令和6年度'}平均株価</td>
-              <td className="text-right">
-                {formData?.similarIndustryData?.average_stock_price ?? 532}円
               </td>
             </tr>
             <tr>
@@ -279,7 +279,18 @@ export default function Results() {
               <td className="text-right">{result.evaluationMethod}</td>
             </tr>
             <tr>
-              <td>1口あたりの評価額</td>
+              <td className="flex items-center justify-between">
+                <span>1口あたりの評価額</span>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen('perShare')}
+                  className="ml-2 px-2 py-1 text-xs bg-white text-black border border-gray-300 rounded hover:bg-gray-200 hover:border-gray-400 cursor-pointer transition-all flex items-center gap-1"
+                  title="計算過程を表示"
+                >
+                  <Calculator size={14} />
+                  計算過程
+                </button>
+              </td>
               <td className="text-right">{result.perShareValue.toLocaleString('ja-JP')}円</td>
             </tr>
           </tbody>
@@ -313,6 +324,7 @@ export default function Results() {
           formData={formData}
           totalShares={result.totalShares}
           sizeMultiplier={result.companySize === '大会社' ? 0.7 : result.companySize.includes('中会社') ? 0.6 : 0.5}
+          result={result}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormData } from '@/lib/types';
+import { FormData, CalculationResult } from '@/lib/types';
 import { toWareki } from '@/lib/date-utils';
 import { buttonStyle, buttonHoverClass } from '@/lib/button-styles';
 import { calculatePerShareValue, calculateComparisonRatio, calculateAverageRatio } from '@/lib/calculations';
@@ -8,10 +8,11 @@ import { calculatePerShareValue, calculateComparisonRatio, calculateAverageRatio
 interface CalculationDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'similar' | 'netAsset';
+  type: 'similar' | 'netAsset' | 'perShare';
   formData: FormData;
   totalShares: number;
   sizeMultiplier: number;
+  result?: CalculationResult;
 }
 
 export default function CalculationDetailsModal({
@@ -21,6 +22,7 @@ export default function CalculationDetailsModal({
   formData,
   totalShares,
   sizeMultiplier,
+  result,
 }: CalculationDetailsModalProps) {
   if (!isOpen) return null;
 
@@ -77,11 +79,11 @@ export default function CalculationDetailsModal({
                 <td className="text-right font-mono">{A.toLocaleString()}円</td>
               </tr>
               <tr className="border-b">
-                <td className="py-2">C：類似業種の1株あたり利益</td>
+                <td className="py-2">C：類似業種の1口あたり利益</td>
                 <td className="text-right font-mono">{C.toLocaleString()}円</td>
               </tr>
               <tr className="border-b">
-                <td className="py-2">D：類似業種の1株あたり純資産</td>
+                <td className="py-2">D：類似業種の1口あたり純資産</td>
                 <td className="text-right font-mono">{D.toLocaleString()}円</td>
               </tr>
             </tbody>
@@ -146,6 +148,102 @@ export default function CalculationDetailsModal({
             {A.toLocaleString()} × {avgRatio.toFixed(2)} × {sizeMultiplier} = <span className="font-bold">{S_50.toLocaleString()}円</span>
           </p>
         </div>
+      </div>
+    );
+  };
+
+  // 1口あたりの評価額の計算過程
+  const renderPerShareDetails = () => {
+    if (!result) return null;
+
+    const S = result.perShareSimilarIndustryValue;
+    const N = result.perShareNetAssetValue;
+    const L = result.lRatio;
+    const perShareValue = result.perShareValue;
+    const evaluationMethod = result.evaluationMethod;
+
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold border-b-2 border-gray-300 pb-2">
+          1口あたりの評価額の計算過程
+        </h3>
+
+        {evaluationMethod === '類似業種比準方式' && (
+          <div>
+            <h4 className="font-bold mb-2">【計算式】</h4>
+            <p className="font-mono text-sm mb-4">1口あたりの評価額 = 類似業種比準価額</p>
+
+            <table className="w-full text-sm">
+              <tbody>
+                <tr className="border-b">
+                  <td className="py-2">類似業種比準価額 (S)</td>
+                  <td className="text-right font-mono">{S.toLocaleString()}円</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="p-4 border-2 border-gray-400 rounded bg-gray-50 mt-4">
+              <h4 className="font-bold mb-2">【計算結果】</h4>
+              <p className="font-mono text-lg">
+                1口あたりの評価額 = <span className="font-bold">{perShareValue.toLocaleString()}円</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {evaluationMethod === '純資産価額方式' && (
+          <div>
+            <h4 className="font-bold mb-2">【計算式】</h4>
+            <p className="font-mono text-sm mb-4">1口あたりの評価額 = 純資産価額</p>
+
+            <table className="w-full text-sm">
+              <tbody>
+                <tr className="border-b">
+                  <td className="py-2">純資産価額 (N)</td>
+                  <td className="text-right font-mono">{N.toLocaleString()}円</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="p-4 border-2 border-gray-400 rounded bg-gray-50 mt-4">
+              <h4 className="font-bold mb-2">【計算結果】</h4>
+              <p className="font-mono text-lg">
+                1口あたりの評価額 = <span className="font-bold">{perShareValue.toLocaleString()}円</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {evaluationMethod.includes('併用方式') && (
+          <div>
+            <h4 className="font-bold mb-2">【計算式】</h4>
+            <p className="font-mono text-sm mb-4">1口あたりの評価額 = S × L + N × (1 - L)</p>
+
+            <table className="w-full text-sm">
+              <tbody>
+                <tr className="border-b">
+                  <td className="py-2">S：類似業種比準価額</td>
+                  <td className="text-right font-mono">{S.toLocaleString()}円</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2">N：純資産価額</td>
+                  <td className="text-right font-mono">{N.toLocaleString()}円</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2">L：L値（併用割合）</td>
+                  <td className="text-right font-mono">{L.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="p-4 border-2 border-gray-400 rounded bg-gray-50 mt-4">
+              <h4 className="font-bold mb-2">【計算結果】</h4>
+              <p className="font-mono text-lg">
+                {S.toLocaleString()} × {L.toFixed(2)} + {N.toLocaleString()} × {(1 - L).toFixed(2)} = <span className="font-bold">{perShareValue.toLocaleString()}円</span>
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -266,7 +364,9 @@ export default function CalculationDetailsModal({
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
           <h2 className="text-xl font-bold">
-            {type === 'similar' ? '類似業種比準価額' : '純資産価額'}の計算過程
+            {type === 'similar' && '類似業種比準価額の計算過程'}
+            {type === 'netAsset' && '純資産価額の計算過程'}
+            {type === 'perShare' && '1口あたりの評価額の計算過程'}
           </h2>
           <button
             type="button"
@@ -277,7 +377,9 @@ export default function CalculationDetailsModal({
           </button>
         </div>
         <div className="p-6">
-          {type === 'similar' ? renderSimilarIndustryDetails() : renderNetAssetDetails()}
+          {type === 'similar' && renderSimilarIndustryDetails()}
+          {type === 'netAsset' && renderNetAssetDetails()}
+          {type === 'perShare' && renderPerShareDetails()}
         </div>
         <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end">
           <button

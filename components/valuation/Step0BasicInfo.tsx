@@ -21,6 +21,7 @@ type Props = {
     setCompanyName: (value: string) => void;
     personInCharge: string;
     setPersonInCharge: (value: string) => void;
+    onBeforeNavigate?: () => void;
 };
 
 export default function Step0BasicInfo({
@@ -30,10 +31,24 @@ export default function Step0BasicInfo({
     setCompanyName,
     personInCharge,
     setPersonInCharge,
+    onBeforeNavigate,
 }: Props) {
     const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [registeredYears, setRegisteredYears] = useState<string[]>([]);
+    const [selectedYearData, setSelectedYearData] = useState<{
+        profit_per_share: number;
+        net_asset_per_share: number;
+        average_stock_price: number;
+    } | null>(null);
+
+    const handleNavigation = (path: string) => {
+        if (onBeforeNavigate) {
+            onBeforeNavigate();
+        }
+        router.push(path);
+    };
 
     const currentYear = new Date().getFullYear();
     const yearOptions = [];
@@ -67,10 +82,51 @@ export default function Step0BasicInfo({
         }
     };
 
+    // 類似業種データが登録されている年度を取得
+    const fetchRegisteredYears = async () => {
+        try {
+            const response = await fetch('/api/similar-industry');
+            if (response.ok) {
+                const data = await response.json();
+                const years = data.map((item: { fiscal_year: string }) => item.fiscal_year);
+                setRegisteredYears(years);
+            }
+        } catch (error) {
+            console.error('類似業種データの取得に失敗しました:', error);
+        }
+    };
+
+    // 選択された年度のデータを取得
+    const fetchYearData = async (year: string) => {
+        if (!year) {
+            setSelectedYearData(null);
+            return;
+        }
+        try {
+            const response = await fetch(`/api/similar-industry?fiscalYear=${year}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.profit_per_share !== 0 || data.net_asset_per_share !== 0 || data.average_stock_price !== 0) {
+                    setSelectedYearData(data);
+                } else {
+                    setSelectedYearData(null);
+                }
+            }
+        } catch (error) {
+            console.error('年度データの取得に失敗しました:', error);
+            setSelectedYearData(null);
+        }
+    };
+
     useEffect(() => {
         fetchUsers();
         fetchCompanies();
+        fetchRegisteredYears();
     }, []);
+
+    useEffect(() => {
+        fetchYearData(fiscalYear);
+    }, [fiscalYear]);
 
     return (
         <div className="card">
@@ -107,14 +163,14 @@ export default function Step0BasicInfo({
                                         </option>
                                     ))}
                                 </select>
-                                <a
-                                    href="/company-settings"
+                                <button
+                                    onClick={() => handleNavigation('/company-settings')}
                                     className={btnHoverClass}
-                                    style={{ ...buttonStyle, textDecoration: 'none' }}
+                                    style={buttonStyle}
                                 >
                                     <Building2 size={20} />
                                     会社マスタ設定
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -122,26 +178,41 @@ export default function Step0BasicInfo({
                         <td>年度</td>
                         <td>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <select
-                                    value={fiscalYear}
-                                    onChange={(e) => setFiscalYear(e.target.value)}
-                                    style={{ width: '200px' }}
-                                >
-                                    <option value="">選択してください</option>
-                                    {yearOptions.map((year) => (
-                                        <option key={year} value={year.toString()}>
-                                            {toWareki(year)}年度
-                                        </option>
-                                    ))}
-                                </select>
-                                <a
-                                    href={`/similar-industry-settings?year=${fiscalYear}`}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <select
+                                        value={fiscalYear}
+                                        onChange={(e) => setFiscalYear(e.target.value)}
+                                        style={{ width: '200px' }}
+                                    >
+                                        <option value="">選択してください</option>
+                                        {yearOptions.map((year) => {
+                                            const isRegistered = registeredYears.includes(year.toString());
+                                            return (
+                                                <option key={year} value={year.toString()}>
+                                                    {toWareki(year)}年度{isRegistered ? ' ✓' : ''}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                    {fiscalYear && selectedYearData && (
+                                        <div style={{ fontSize: '12px', color: '#000000', fontWeight: 'bold' }}>
+                                            ✓ データ登録済み
+                                        </div>
+                                    )}
+                                    {fiscalYear && !selectedYearData && (
+                                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>
+                                            ⚠ データ未登録
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => handleNavigation(`/similar-industry-settings?year=${fiscalYear}`)}
                                     className={btnHoverClass}
-                                    style={{ ...buttonStyle, textDecoration: 'none' }}
+                                    style={buttonStyle}
                                 >
                                     <CalendarDays size={20} />
                                     類似業種データ設定
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -161,14 +232,14 @@ export default function Step0BasicInfo({
                                         </option>
                                     ))}
                                 </select>
-                                <a
-                                    href="/user-settings"
+                                <button
+                                    onClick={() => handleNavigation('/user-settings')}
                                     className={btnHoverClass}
-                                    style={{ ...buttonStyle, textDecoration: 'none' }}
+                                    style={buttonStyle}
                                 >
                                     <UserPen size={20} />
                                     担当者マスタ設定
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
