@@ -41,6 +41,8 @@ export default function Step0BasicInfo({
         profit_per_share: number;
         net_asset_per_share: number;
         average_stock_price: number;
+        is_fallback?: boolean;
+        fallback_year?: string;
     } | null>(null);
 
     const handleNavigation = (path: string) => {
@@ -106,7 +108,10 @@ export default function Step0BasicInfo({
             const response = await fetch(`/api/similar-industry?fiscalYear=${year}`);
             if (response.ok) {
                 const data = await response.json();
-                if (data.profit_per_share !== 0 || data.net_asset_per_share !== 0 || data.average_stock_price !== 0) {
+                // フォールバックデータの場合は「未登録」扱い
+                if (data.is_fallback) {
+                    setSelectedYearData(null);
+                } else if (data.profit_per_share !== 0 || data.net_asset_per_share !== 0 || data.average_stock_price !== 0) {
                     setSelectedYearData(data);
                 } else {
                     setSelectedYearData(null);

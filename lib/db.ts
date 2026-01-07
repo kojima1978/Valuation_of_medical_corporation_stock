@@ -87,6 +87,7 @@ function initializeDatabase(database: Database.Database) {
       profit_per_share REAL NOT NULL DEFAULT 51,
       net_asset_per_share REAL NOT NULL DEFAULT 395,
       average_stock_price REAL NOT NULL DEFAULT 532,
+      is_active INTEGER NOT NULL DEFAULT 1,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     );

@@ -176,6 +176,11 @@
 
 **論理削除**: `is_active = 0` で無効化。データの整合性を維持しながら削除扱いとする。
 
+**フォールバック機能**: データ未登録の年度が選択された場合、令和6年度（2024年度）のデータが自動的に使用されます。
+- デフォルト年度: 2024
+- デフォルト値: profit_per_share=51, net_asset_per_share=395, average_stock_price=532
+- APIレスポンスに `is_fallback: true` フラグが含まれ、フロントエンドで判別可能
+
 ## リレーションシップの詳細
 
 ### 1. companies → valuations（1対多）
@@ -246,6 +251,10 @@
 - **関係**: 他のテーブルとの外部キー関係はなし
 - **用途**: 評価額計算時に年度（fiscal_year）をキーとして参照
 - **データ例**: 令和6年度（2024年度）の医療業界の標準的な株価データ
+- **フォールバック動作**:
+  - リクエストされた年度のデータが存在しない場合、2024年度のデータを自動的に返す
+  - レスポンスに `is_fallback: true` と `fallback_year: '2024'` を含める
+  - フロントエンド側で「⚠ データ未登録」と表示されるが、計算は継続可能
 
 ## データフロー例
 
@@ -400,16 +409,23 @@ SELECT
 FROM investors
 WHERE valuation_id = ?;
 
--- 類似業種データを取得
+-- 類似業種データを取得（有効なデータのみ）
 SELECT
   profit_per_share,
   net_asset_per_share,
   average_stock_price
 FROM similar_industry_data
-WHERE fiscal_year = ?;
+WHERE fiscal_year = ? AND is_active = 1;
+
+-- フォールバック処理を含む類似業種データ取得
+-- アプリケーション側で実装されているロジック:
+-- 1. 指定年度のデータを検索
+-- 2. 見つからない場合は2024年度のデータを検索
+-- 3. 見つかった場合はis_fallback=trueフラグを付けて返す
+-- 4. 2024年度も見つからない場合は0を返す
 ```
 
-### 会社別の評価履歴を取得
+### 会社別の評価履歴を取得（論理削除を考慮）
 
 ```sql
 SELECT
@@ -423,6 +439,7 @@ JOIN valuations v ON c.id = v.company_id
 JOIN users u ON v.user_id = u.id
 LEFT JOIN financial_data f ON v.id = f.valuation_id
 LEFT JOIN investors i ON v.id = i.valuation_id
+WHERE c.is_active = 1 AND u.is_active = 1
 GROUP BY c.id, v.id
 ORDER BY c.company_name, v.fiscal_year DESC;
 ```
@@ -437,6 +454,30 @@ SELECT
   MAX(v.created_at) as latest_valuation
 FROM users u
 LEFT JOIN valuations v ON u.id = v.user_id
+WHERE u.is_active = 1
 GROUP BY u.id
 ORDER BY valuation_count DESC;
+```
+
+### 類似業種データの管理クエリ
+
+```sql
+-- 有効な類似業種データの一覧を取得
+SELECT * FROM similar_industry_data
+WHERE is_active = 1
+ORDER BY fiscal_year DESC;
+
+-- 類似業種データを無効化（論理削除）
+UPDATE similar_industry_data
+SET is_active = 0, updated_at = datetime('now', 'localtime')
+WHERE id = ?;
+
+-- 類似業種データを有効化
+UPDATE similar_industry_data
+SET is_active = 1, updated_at = datetime('now', 'localtime')
+WHERE id = ?;
+
+-- 無効化されたデータのみ物理削除可能
+DELETE FROM similar_industry_data
+WHERE id = ? AND is_active = 0;
 ```

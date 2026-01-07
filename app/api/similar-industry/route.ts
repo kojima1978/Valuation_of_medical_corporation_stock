@@ -16,13 +16,28 @@ export async function GET(request: NextRequest) {
         .get(fiscalYear);
 
       if (!data) {
-        // データが見つからない場合は0を返す
-        return NextResponse.json({
-          fiscal_year: fiscalYear,
-          profit_per_share: 0,
-          net_asset_per_share: 0,
-          average_stock_price: 0,
-        });
+        // データが見つからない場合は令和6年度（2024）のデータをフォールバックとして使用
+        const defaultData = db
+          .prepare('SELECT * FROM similar_industry_data WHERE fiscal_year = ? AND is_active = 1')
+          .get('2024');
+
+        if (defaultData) {
+          // 2024年度のデータが存在する場合、それを使用（fiscal_yearは元のまま）
+          return NextResponse.json({
+            ...defaultData,
+            fiscal_year: fiscalYear,
+            is_fallback: true, // フォールバックであることを示すフラグ
+            fallback_year: '2024',
+          });
+        } else {
+          // 2024年度のデータも存在しない場合は0を返す
+          return NextResponse.json({
+            fiscal_year: fiscalYear,
+            profit_per_share: 0,
+            net_asset_per_share: 0,
+            average_stock_price: 0,
+          });
+        }
       }
 
       return NextResponse.json(data);
@@ -197,6 +212,39 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: '類似業種データを有効化しました',
+      });
+    } else if (action === 'delete') {
+      // 削除（無効化されたデータのみ）
+      const record = db
+        .prepare('SELECT is_active FROM similar_industry_data WHERE id = ?')
+        .get(id) as { is_active: number } | undefined;
+
+      if (!record) {
+        return NextResponse.json(
+          { error: 'データが見つかりません' },
+          { status: 404 }
+        );
+      }
+
+      if (record.is_active === 1) {
+        return NextResponse.json(
+          { error: '有効なデータは削除できません。先に無効化してください' },
+          { status: 400 }
+        );
+      }
+
+      const result = db.prepare('DELETE FROM similar_industry_data WHERE id = ?').run(id);
+
+      if (result.changes === 0) {
+        return NextResponse.json(
+          { error: 'データが見つかりません' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: '類似業種データを削除しました',
       });
     } else {
       return NextResponse.json(
